@@ -1,0 +1,11 @@
+[package]
+name = "fft_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+realfft = "3.3.0"
+hound = "3.5.1"
+image = "0.25.2"
+rand = "0.8.5"
+apodize = "1.0.0"
