@@ -4,5 +4,5 @@
 # [package_name]
 # name = "Human Readable Plugin Name"  # defaults to <package_name>
 
-[PLUGIN_NAME]
-name = "[PLUGIN_NAME]"
+[fft_gate]
+name = "fft_gate"
