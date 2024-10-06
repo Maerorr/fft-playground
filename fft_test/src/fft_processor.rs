@@ -38,8 +38,6 @@ pub struct FFTProcessor {
     audio_pos: usize,
 
     hop_no: usize,
-
-    colorizer: Colorizer,
 }
 
 impl FFTProcessor {
@@ -54,6 +52,7 @@ impl FFTProcessor {
         let input_buffer: Vec<f32> = r2c.make_input_vec();
         let output_buffer: Vec<Complex<f32>> = r2c.make_output_vec();
         let inverse_input: Vec<Complex<f32>> = c2r.make_input_vec();
+        println!("inverse input len: {}", inverse_input.len());
         let inverse_output: Vec<f32> = c2r.make_output_vec();
 
         let bin_width = sample_rate as f32 / FFT_SIZE as f32;
@@ -78,7 +77,6 @@ impl FFTProcessor {
             sample_rate: sample_rate,
             audio_pos: 0,
             hop_no: 0,
-            colorizer: Colorizer::new(SELECTED_NOTES, 20.0, 7500.0, 0.05, bin_width),
         }
     }
 
@@ -166,7 +164,7 @@ impl FFTProcessor {
             if self.spectrum_db[i] > -26.0 {
                 self.post_process_buffer[i] = mag;
             } else {
-                self.post_process_buffer[i] = 0.0;
+                self.post_process_buffer[i] = mag;
             }
 
             // mag = mag * self.freq_gain(frequency);

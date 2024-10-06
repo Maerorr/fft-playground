@@ -15,12 +15,11 @@ mod circ_buf;
 mod utils;
 mod colorizer;
 
-const FFT_SIZE: usize = 256;
+const FFT_SIZE: usize = 4096;
 const NUM_BINS: usize = FFT_SIZE / 2;
 const OVERLAP: usize = 4;
 const HOP_SIZE: usize = FFT_SIZE / OVERLAP;
 const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
-const SAMPLE_RATE: f32 = 100.0;
 
 fn main() {
 
