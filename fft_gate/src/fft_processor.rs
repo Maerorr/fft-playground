@@ -12,8 +12,6 @@ use crate::{utils, FFT_SIZE, FFT_SIZE_F32, HOP_SIZE, NUM_BINS, WINDOW_CORRECTION
 
 pub struct FFTProcessor {
     sample_rate: u32,
-    //input_buffer: CircBuf,
-    //output_buffer: CircBuf,
     input_buffer: Vec<f32>,
     output_buffer: Vec<f32>,
     pos: usize,
@@ -43,10 +41,6 @@ pub struct FFTProcessor {
 
 impl FFTProcessor {
     pub fn new(sample_rate: u32) -> Self {
-        //let buf = CircBuf::new(FFT_SIZE);
-        //let mut out_buf = CircBuf::new(FFT_SIZE);
-        //out_buf.set_write_idx(HOP_SIZE);
-
         let window = apodize::hanning_iter(FFT_SIZE).map(|x| x as f32).collect::<Vec<f32>>();
 
         // all fft stuff
@@ -103,11 +97,6 @@ impl FFTProcessor {
     }
 
     pub fn process_window(&mut self) {
-        //self.fft_in.copy_from_slice(&self.input_buffer.get_slice_as_vec().as_slice());
-        // for (i, sample) in self.input_buffer.iter().enumerate() {
-        //     self.fft_in[i] = *sample;
-        // }
-
         let len = FFT_SIZE - self.pos;
         for i in 0..len {
             self.fft_in[i] = self.input_buffer[i + self.pos];
@@ -118,57 +107,33 @@ impl FFTProcessor {
                 self.fft_in[FFT_SIZE - self.pos + i] = self.input_buffer[i];
             }
         }
-        
-        
-        // ##############################
-        // for i in 0..(self.input_buffer.len - self.input_buffer.write_idx) {
-        //     self.fft_in[i] = self.input_buffer.buf[self.input_buffer.write_idx + i];
-
-        // }
-        // for i in 0..self.input_buffer.write_idx {
-        //     self.fft_in[self.input_buffer.len - self.input_buffer.write_idx + i] = self.input_buffer.buf[i];
-        // }
-
-        // for (i, j) in (0..(self.input_buffer.len - self.input_buffer.write_idx)).into_iter().zip(self.input_buffer.write_idx..self.input_buffer.len) {
-        //     self.fft_in[i] = self.input_buffer.buf[j];
-        // }
-
-        // for (i, j) in ((self.input_buffer.len - self.input_buffer.write_idx)..self.input_buffer.len).into_iter().zip(0..self.input_buffer.write_idx) {
-        //     self.fft_in[i] = self.input_buffer.buf[j];
-        // }
 
         utils::multiply_vectors_in_place(&mut self.fft_in, &self.window);
 
+        self.r2c.process(&mut self.fft_in, &mut self.fft_out).unwrap();
+        for i in self.fft_out.iter_mut() {
+            // * 2.0 (window correction) * 2.0 (one sided fft correction)
+            *i = *i * 4.0 / FFT_SIZE_F32;
+        }
+
+        // self.process_spectrum();
+
+        for (i, bin) in self.fft_out.iter().enumerate() {
+            self.ifft_in[i] = *bin;
+        }
+
+        self.c2r.process(&mut self.ifft_in, &mut self.ifft_out).unwrap();
+        utils::multiply_vectors_in_place(&mut self.ifft_out, &self.window);
+
+        for i in self.ifft_out.iter_mut() {
+            *i *= WINDOW_CORRECTION / 4.0;
+        }
+
         for i in 0..self.pos {
-            self.output_buffer[i] += self.fft_in[i + FFT_SIZE - self.pos];
+            self.output_buffer[i] += self.ifft_out[i + FFT_SIZE - self.pos];
         }
         for i in 0..(FFT_SIZE - self.pos) {
-            self.output_buffer[i + self.pos] += self.fft_in[i];
+            self.output_buffer[i + self.pos] += self.ifft_out[i];
         }
-
-        //self.output_buffer.write_with_overlap(&self.fft_in, HOP_SIZE as isize);
-
-        // utils::multiply_vectors_in_place(&mut self.fft_in, &self.window);
-        // self.r2c.process(&mut self.fft_in, &mut self.fft_out).unwrap();
-        // for i in self.fft_out.iter_mut() {
-        //     // * 2.0 (window correction) * 2.0 (one sided fft correction)
-        //     *i = *i * 4.0 / FFT_SIZE_F32;
-        // }
-
-        // // self.process_spectrum();
-
-        // for (i, bin) in self.fft_out.iter().enumerate() {
-        //     self.ifft_in[i] = *bin;
-        // }
-
-        // self.c2r.process(&mut self.ifft_in, &mut self.ifft_out).unwrap();
-
-        // utils::multiply_vectors_in_place(&mut self.ifft_out, &self.window);
-
-        // for i in self.ifft_out.iter_mut() {
-        //     *i *= WINDOW_CORRECTION / 4.0;
-        // }
-
-        // self.output_buffer.write_with_overlap(&self.ifft_out, HOP_SIZE as isize);
     }
 }
