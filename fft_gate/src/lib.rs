@@ -4,9 +4,9 @@ use nih_plug_vizia::ViziaState;
 use std::{env, sync::Arc};
 
 mod editor;
-mod circ_buf;
 mod fft_processor;
 mod utils;
+mod gate;
 
 // This is a shortened version of the gain example with most comments removed, check out
 // https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get

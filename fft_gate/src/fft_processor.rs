@@ -7,7 +7,6 @@ use realfft::num_complex::Complex;
 use realfft::{ComplexToReal, RealToComplex};
 use realfft::{num_complex::ComplexFloat, RealFftPlanner};
 
-use crate::circ_buf::CircBuf;
 use crate::{utils, FFT_SIZE, FFT_SIZE_F32, HOP_SIZE, NUM_BINS, WINDOW_CORRECTION};
 
 pub struct FFTProcessor {
