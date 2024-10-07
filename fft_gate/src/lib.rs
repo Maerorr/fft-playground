@@ -1,7 +1,8 @@
 use fft_processor::FFTProcessor;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
-use std::{env, sync::Arc};
+use util::db_to_gain;
+use std::{env, f32::consts::PI, sync::Arc};
 
 mod editor;
 mod fft_processor;
@@ -22,12 +23,20 @@ const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 pub struct FFTGate {
     fft_processors: [FFTProcessor; 2],
     params: Arc<FFTGateParams>,
+    phase: f32,
 }
 
 #[derive(Params)]
 struct FFTGateParams {
     #[persist = "editor-state"]
     editor_state: Arc<ViziaState>,
+
+    #[id = "threshold"]
+    threshold: FloatParam,
+    #[id = "attack"]
+    attack: FloatParam,
+    #[id = "release"]
+    release: FloatParam,
 }
 
 impl Default for FFTGate {
@@ -37,6 +46,7 @@ impl Default for FFTGate {
         Self {
             fft_processors: [fft_proc1, fft_proc2],
             params: Arc::new(FFTGateParams::default()),
+            phase: 0f32,
         }
     }
 }
@@ -45,6 +55,27 @@ impl Default for FFTGateParams {
     fn default() -> Self {
         Self {
             editor_state: editor::default_state(),
+
+            threshold: FloatParam::new(
+                "Threshold", 
+                -24.0, 
+                FloatRange::Skewed { 
+                    min: -60.0, 
+                    max:12.0, 
+                    factor: 0.3,
+                }
+            ).with_unit("dB")
+            .with_value_to_string(formatters::v2s_f32_rounded(2)),
+
+            attack: FloatParam::new("Attack", 1.0, FloatRange::Skewed { min: -1.0, max: 20.0, factor: 0.3 })
+            .with_smoother(SmoothingStyle::Linear(15.0))
+            .with_unit("ms")
+            .with_value_to_string(formatters::v2s_f32_rounded(3)),
+
+            release: FloatParam::new("Attack", 1.0, FloatRange::Skewed { min: -1.0, max: 100.0, factor: 0.3 })
+            .with_smoother(SmoothingStyle::Linear(15.0))
+            .with_unit("ms")
+            .with_value_to_string(formatters::v2s_f32_rounded(3)),
         }
     }
 }
@@ -72,7 +103,6 @@ impl Plugin for FFTGate{
         names: PortNames::const_default(),
     }];
 
-
     const MIDI_INPUT: MidiConfig = MidiConfig::None;
     const MIDI_OUTPUT: MidiConfig = MidiConfig::None;
 
@@ -97,7 +127,7 @@ impl Plugin for FFTGate{
         _buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        env::set_var("NIH_LOG", "C:\\Users\\7hube\\Desktop\\nih_log.txt");
+        //env::set_var("NIH_LOG", "C:\\Users\\7hube\\Desktop\\nih_log.txt");
         // Resize buffers and perform other potentially expensive initialization operations here.
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
@@ -115,6 +145,14 @@ impl Plugin for FFTGate{
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
+        let th = self.params.threshold.value();
+        let att = self.params.attack.value();
+        let rel = self.params.release.value();
+
+        for i in 0..2 {
+            self.fft_processors[i].set_gate_params(th, att, rel);
+        }
+        
         for channel_samples in buffer.iter_samples() {
             // Smoothing is optionally built into the parameters themselves
             for (i, sample) in channel_samples.into_iter().enumerate() {
@@ -127,6 +165,7 @@ impl Plugin for FFTGate{
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
+            self.params.clone(),
             self.params.editor_state.clone(),
         )
     }

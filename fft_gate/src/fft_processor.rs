@@ -2,7 +2,9 @@ use core::{f32, panic};
 use std::any::Any;
 use std::process::Output;
 
+use crate::gate::Gate;
 use crate::nih_log;
+use nih_plug::util;
 use realfft::num_complex::Complex;
 use realfft::{ComplexToReal, RealToComplex};
 use realfft::{num_complex::ComplexFloat, RealFftPlanner};
@@ -35,7 +37,7 @@ pub struct FFTProcessor {
 
     post_process_buffer: Vec<f32>,
 
-    //hop_no: usize,
+    gates: Vec<Gate>,
 }
 
 impl FFTProcessor {
@@ -52,6 +54,8 @@ impl FFTProcessor {
         let ifft_out = c2r.make_output_vec();
 
         let bin_width = sample_rate as f32 / FFT_SIZE as f32;
+        let time_step = HOP_SIZE as f32 / sample_rate as f32;
+        let mut gates = vec![Gate::new(sample_rate, time_step); NUM_BINS];
 
         Self {
             input_buffer: vec![0.0f32; FFT_SIZE],
@@ -73,6 +77,7 @@ impl FFTProcessor {
             spectrum_db: vec![0f32; NUM_BINS],
             bin_width: bin_width,
             post_process_buffer: vec![0f32; NUM_BINS],
+            gates: gates,
         }
     }
 
@@ -115,11 +120,14 @@ impl FFTProcessor {
             *i = *i * 4.0 / FFT_SIZE_F32;
         }
 
-        // self.process_spectrum();
+        // this calculates mag, phase, db and frequencies of each bin
+        self.calculate_fft_values();
 
-        for (i, bin) in self.fft_out.iter().enumerate() {
-            self.ifft_in[i] = *bin;
-        }
+        self.process_spectrum();
+
+        // for (i, bin) in self.fft_out.iter().enumerate() {
+        //     self.ifft_in[i] = *bin;
+        // }
 
         self.c2r.process(&mut self.ifft_in, &mut self.ifft_out).unwrap();
         utils::multiply_vectors_in_place(&mut self.ifft_out, &self.window);
@@ -133,6 +141,36 @@ impl FFTProcessor {
         }
         for i in 0..(FFT_SIZE - self.pos) {
             self.output_buffer[i + self.pos] += self.ifft_out[i];
+        }
+    }
+
+    fn process_spectrum(&mut self) {
+        self.ifft_in[0] = self.fft_out[0];
+
+        let len = self.ifft_in.len() - 1;
+        self.ifft_in[len] = self.fft_out[len];
+
+        //nih_log!("gates len {}", self.gates.len());
+        for i in 1..(self.fft_out.len() - 1) {
+            //nih_log!("processing gate no: {}", i);
+            let new_mag = self.gates[i].process(self.spectrum_db[i]);
+            self.ifft_in[i] = Complex::from_polar(new_mag, self.spectrum_phase[i]);
+        }
+    }
+
+    fn calculate_fft_values(&mut self) {
+        for i in 1..(self.fft_out.len() - 1) {
+            //nih_log!("calculating fft_values: {}", i);
+            self.spectrum_mag[i] = self.fft_out[i].norm();
+            self.spectrum_phase[i] = self.fft_out[i].arg();
+            self.spectrum_db[i] = util::gain_to_db(self.spectrum_mag[i]);
+            self.spectrum_freq[i] = (i as u32 * self.sample_rate) as f32 / FFT_SIZE as f32;
+        }
+    }
+
+    pub fn set_gate_params(&mut self, th: f32, att_ms: f32, rel_ms: f32) {
+        for gate in self.gates.iter_mut() {
+            gate.set_gate_params(th, att_ms, rel_ms);
         }
     }
 }
