@@ -1,0 +1,39 @@
+[package]
+name = "plugin_name"
+version = "0.1.0"
+edition = "2021"
+authors = ["maeror"]
+license = ""
+homepage = ""
+description = ""
+
+[workspace]
+members = ["xtask"]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+# Remove the `assert_process_allocs` feature to allow allocations on the audio
+# thread in debug builds.
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs", "standalone"] }
+# Uncomment the below line to disable the on-by-default VST3 feature to remove
+# the GPL compatibility requirement
+# nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", default-features = false, features = ["assert_process_allocs"] }
+
+nih_plug_vizia = { path = "nih_plug_vizia" }
+realfft = "3.3.0"
+rand = "0.8.5"
+apodize = "1.0.0"
+nih_log = "0.3.1"
+triple_buffer = "8.0.0"
+
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = "none"
