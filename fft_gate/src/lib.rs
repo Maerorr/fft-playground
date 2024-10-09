@@ -1,13 +1,16 @@
+use analyzer_data::AnalyzerData;
 use fft_processor::FFTProcessor;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
+use triple_buffer::TripleBuffer;
 use util::db_to_gain;
-use std::{env, f32::consts::PI, sync::Arc};
+use std::{env, f32::consts::PI, sync::{Arc, Mutex}};
 
 mod editor;
 mod fft_processor;
 mod utils;
 mod gate;
+mod analyzer_data;
 
 // This is a shortened version of the gain example with most comments removed, check out
 // https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
@@ -23,11 +26,13 @@ const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 pub struct FFTGate {
     fft_processors: [FFTProcessor; 2],
     params: Arc<FFTGateParams>,
-    phase: f32,
+    //analyzer_input_data: Arc<Mutex<triple_buffer::Input<AnalyzerData>>>,
+    analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
+    sample_rate: Arc<AtomicF32>,
 }
 
 #[derive(Params)]
-struct FFTGateParams {
+pub struct FFTGateParams {
     #[persist = "editor-state"]
     editor_state: Arc<ViziaState>,
 
@@ -41,12 +46,15 @@ struct FFTGateParams {
 
 impl Default for FFTGate {
     fn default() -> Self {
-        let fft_proc1 = FFTProcessor::new(44100u32);
-        let fft_proc2 = FFTProcessor::new(44100u32);
+        let (analyzer_input_data, analyzer_output_data) = TripleBuffer::default().split();
+        
+        let fft_proc1 = FFTProcessor::new(44100u32, Some(analyzer_input_data));
+        let fft_proc2 = FFTProcessor::new(44100u32, None);
         Self {
             fft_processors: [fft_proc1, fft_proc2],
             params: Arc::new(FFTGateParams::default()),
-            phase: 0f32,
+            analyzer_output_data: Arc::new(Mutex::new(analyzer_output_data)),
+            sample_rate: Arc::new(AtomicF32::new(1.0)),
         }
     }
 }
@@ -60,7 +68,7 @@ impl Default for FFTGateParams {
                 "Threshold", 
                 -24.0, 
                 FloatRange::Skewed { 
-                    min: -60.0, 
+                    min: -100.0, 
                     max:12.0, 
                     factor: 0.3,
                 }
@@ -131,6 +139,7 @@ impl Plugin for FFTGate{
         // Resize buffers and perform other potentially expensive initialization operations here.
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
+        self.sample_rate.store(_buffer_config.sample_rate, std::sync::atomic::Ordering::Relaxed);
         true
     }
 
@@ -165,8 +174,12 @@ impl Plugin for FFTGate{
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
-            self.params.clone(),
             self.params.editor_state.clone(),
+            editor::EditorData {
+                plugin_data: self.params.clone(),
+                analyzer_data:self.analyzer_output_data.clone(),
+                sample_rate: self.sample_rate.clone(),
+            }
         )
     }
 }

@@ -26,6 +26,7 @@ realfft = "3.3.0"
 rand = "0.8.5"
 apodize = "1.0.0"
 nih_log = "0.3.1"
+triple_buffer = "8.0.0"
 
 
 [profile.release]

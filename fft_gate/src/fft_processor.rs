@@ -1,7 +1,9 @@
 use core::{f32, panic};
 use std::any::Any;
 use std::process::Output;
+use std::sync::{Arc, Mutex};
 
+use crate::analyzer_data::AnalyzerData;
 use crate::gate::Gate;
 use crate::nih_log;
 use nih_plug::util;
@@ -37,11 +39,13 @@ pub struct FFTProcessor {
 
     post_process_buffer: Vec<f32>,
 
+    analyzer_input_data:  Option<triple_buffer::Input<AnalyzerData>>,
+
     gates: Vec<Gate>,
 }
 
 impl FFTProcessor {
-    pub fn new(sample_rate: u32) -> Self {
+    pub fn new(sample_rate: u32, analyzer_buffer: Option<triple_buffer::Input<AnalyzerData>>) -> Self {
         let window = apodize::hanning_iter(FFT_SIZE).map(|x| x as f32).collect::<Vec<f32>>();
 
         // all fft stuff
@@ -77,6 +81,7 @@ impl FFTProcessor {
             spectrum_db: vec![0f32; NUM_BINS],
             bin_width: bin_width,
             post_process_buffer: vec![0f32; NUM_BINS],
+            analyzer_input_data: analyzer_buffer,
             gates: gates,
         }
     }
@@ -101,6 +106,7 @@ impl FFTProcessor {
     }
 
     pub fn process_window(&mut self) {
+        
         let len = FFT_SIZE - self.pos;
         for i in 0..len {
             self.fft_in[i] = self.input_buffer[i + self.pos];
@@ -122,8 +128,21 @@ impl FFTProcessor {
 
         // this calculates mag, phase, db and frequencies of each bin
         self.calculate_fft_values();
-
+    
         self.process_spectrum();
+
+        self.calculate_db_for_analyzer();
+        let is_some = self.analyzer_input_data.is_some();
+
+        if is_some {
+            let analyzer_input = self.analyzer_input_data.as_mut().unwrap().input_buffer();
+            analyzer_input.magnitudes[..NUM_BINS].fill(0.0f32);
+            analyzer_input.num_bins = NUM_BINS;
+            for (i, mag) in analyzer_input.magnitudes[..NUM_BINS].iter_mut().enumerate() {
+                *mag = self.spectrum_db[i];
+            }
+            self.analyzer_input_data.as_mut().unwrap().publish();
+        }
 
         // for (i, bin) in self.fft_out.iter().enumerate() {
         //     self.ifft_in[i] = *bin;
@@ -165,6 +184,13 @@ impl FFTProcessor {
             self.spectrum_phase[i] = self.fft_out[i].arg();
             self.spectrum_db[i] = util::gain_to_db(self.spectrum_mag[i]);
             self.spectrum_freq[i] = (i as u32 * self.sample_rate) as f32 / FFT_SIZE as f32;
+        }
+    }
+
+    fn calculate_db_for_analyzer(&mut self) {
+        for i in 1..(self.ifft_in.len() - 1) {
+            self.spectrum_mag[i] = self.ifft_in[i].norm();
+            self.spectrum_db[i] = util::gain_to_db(self.spectrum_mag[i]);
         }
     }
 
