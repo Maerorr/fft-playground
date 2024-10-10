@@ -53,7 +53,7 @@ pub(crate) fn create(
                 HStack::new(cx, |cx| {
                     //params go here \/
                     ParamButton::new(cx, EditorData::plugin_data, |params| &params.freeze_magnitudes);
-                    ParamButton::new(cx, EditorData::plugin_data, |params| &params.freeze_phase);
+                    //ParamButton::new(cx, EditorData::plugin_data, |params| &params.freeze_phase);
 
                 })
                 .col_between(Pixels(25.0))

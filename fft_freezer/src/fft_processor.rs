@@ -8,8 +8,8 @@ use crate::fft_freeze::FFTFreeze;
 use crate::nih_log;
 use nih_plug::util;
 use realfft::num_complex::Complex;
-use realfft::{ComplexToReal, RealToComplex};
 use realfft::{num_complex::ComplexFloat, RealFftPlanner};
+use realfft::{ComplexToReal, RealToComplex};
 
 use crate::{utils, FFT_SIZE, FFT_SIZE_F32, HOP_SIZE, NUM_BINS, WINDOW_CORRECTION};
 
@@ -33,21 +33,25 @@ pub struct FFTProcessor {
 
     spectrum_mag: Vec<f32>,
     spectrum_phase: Vec<f32>,
-    spectrum_freq: Vec<f32>, 
+    spectrum_freq: Vec<f32>,
     spectrum_db: Vec<f32>,
     bin_width: f32,
 
     post_process_buffer: Vec<f32>,
 
-    analyzer_input_data:  Option<triple_buffer::Input<AnalyzerData>>,
+    analyzer_input_data: Option<triple_buffer::Input<AnalyzerData>>,
     freezer: FFTFreeze,
     freeze_mags: bool,
-    freeze_phase: bool,
 }
 
 impl FFTProcessor {
-    pub fn new(sample_rate: u32, analyzer_buffer: Option<triple_buffer::Input<AnalyzerData>>) -> Self {
-        let window = apodize::hanning_iter(FFT_SIZE).map(|x| x as f32).collect::<Vec<f32>>();
+    pub fn new(
+        sample_rate: u32,
+        analyzer_buffer: Option<triple_buffer::Input<AnalyzerData>>,
+    ) -> Self {
+        let window = apodize::hanning_iter(FFT_SIZE)
+            .map(|x| x as f32)
+            .collect::<Vec<f32>>();
 
         // all fft stuff
         let mut planner = RealFftPlanner::<f32>::new();
@@ -71,8 +75,8 @@ impl FFTProcessor {
             r2c: r2c,
             c2r: c2r,
             fft_in: fft_in,
-            fft_out: fft_out, 
-            ifft_in: ifft_in, 
+            fft_out: fft_out,
+            ifft_in: ifft_in,
             ifft_out: ifft_out,
             sample_rate: sample_rate,
             spectrum_mag: vec![0f32; NUM_BINS],
@@ -82,13 +86,12 @@ impl FFTProcessor {
             bin_width: bin_width,
             post_process_buffer: vec![0f32; NUM_BINS],
             analyzer_input_data: analyzer_buffer,
-            freezer: FFTFreeze::new(),
+            freezer: FFTFreeze::new(128),
             freeze_mags: false,
-            freeze_phase: false,
         }
     }
 
-    pub fn process_sample(&mut self, sample: f32, f_mag: bool, f_phase: bool) -> f32 {
+    pub fn process_sample(&mut self, sample: f32, f_mag: bool) -> f32 {
         self.input_buffer[self.pos] = sample;
         let output_sample = self.output_buffer[self.pos];
         self.output_buffer[self.pos] = 0.0f32;
@@ -101,14 +104,14 @@ impl FFTProcessor {
         self.count_to_next_hop += 1;
         if self.count_to_next_hop == HOP_SIZE {
             self.count_to_next_hop = 0;
-            self.process_window(f_mag, f_phase);
+            self.process_window(f_mag);
         }
 
         output_sample
     }
 
-    pub fn process_window(&mut self, f_mag: bool, f_phase: bool) {
-        
+    pub fn process_window(&mut self, f_mag: bool) {
+        self.freeze_mags = f_mag;
         let len = FFT_SIZE - self.pos;
         for i in 0..len {
             self.fft_in[i] = self.input_buffer[i + self.pos];
@@ -122,7 +125,9 @@ impl FFTProcessor {
 
         utils::multiply_vectors_in_place(&mut self.fft_in, &self.window);
 
-        self.r2c.process(&mut self.fft_in, &mut self.fft_out).unwrap();
+        self.r2c
+            .process(&mut self.fft_in, &mut self.fft_out)
+            .unwrap();
         for i in self.fft_out.iter_mut() {
             // * 2.0 (window correction) * 2.0 (one sided fft correction)
             *i = *i * 4.0 / FFT_SIZE_F32;
@@ -130,23 +135,9 @@ impl FFTProcessor {
 
         // this calculates mag, phase, db and frequencies of each bin
         self.calculate_fft_values();
-    
-        if self.freeze_mags != f_mag {
-            self.freeze_mags = f_mag;
-            if self.freeze_mags {
-                for (i, val) in self.spectrum_mag.iter().enumerate() {
-                    self.freezer.mag_freeze[i] = *val;
-                }
-            }
-        }
 
-        if self.freeze_phase != f_phase {
-            self.freeze_phase = f_phase;
-            if self.freeze_phase {
-                for (i, val) in self.spectrum_phase.iter().enumerate() {
-                    self.freezer.phase_freeze[i] = *val;
-                }
-            }
+        if !f_mag {
+            self.freezer.record(&self.spectrum_mag, &self.spectrum_phase);
         }
 
         self.process_spectrum();
@@ -168,7 +159,9 @@ impl FFTProcessor {
         //     self.ifft_in[i] = *bin;
         // }
 
-        self.c2r.process(&mut self.ifft_in, &mut self.ifft_out).unwrap();
+        self.c2r
+            .process(&mut self.ifft_in, &mut self.ifft_out)
+            .unwrap();
         utils::multiply_vectors_in_place(&mut self.ifft_out, &self.window);
 
         for i in self.ifft_out.iter_mut() {
@@ -193,15 +186,17 @@ impl FFTProcessor {
         let len = self.ifft_in.len() - 1;
         self.ifft_in[len] = self.fft_out[len];
 
+        let freeze_idx = self.freezer.get_rand_frame_num();
+
         for i in 1..(self.fft_out.len() - 1) {
             //nih_log!("processing gate no: {}", i);
             let mag = if self.freeze_mags {
-                self.freezer.mag_freeze[i]
+                self.freezer.frames[freeze_idx].magnitudes[i]
             } else {
                 self.spectrum_mag[i]
             };
             let phase = if self.freeze_mags {
-                self.freezer.phase_freeze[i]
+                self.freezer.frames[freeze_idx].phases[i]
             } else {
                 self.spectrum_phase[i]
             };

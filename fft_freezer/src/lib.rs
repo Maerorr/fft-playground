@@ -16,7 +16,7 @@ mod fft_freeze;
 // https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
 // started
 
-const FFT_SIZE: usize = 1024;
+const FFT_SIZE: usize = 4096;
 const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
 const NUM_BINS: usize = FFT_SIZE / 2 + 1;
 const OVERLAP: usize = 4;
@@ -39,8 +39,8 @@ pub struct PluginParams {
     #[id = "freeze_magnitudes"]
     freeze_magnitudes: BoolParam,
 
-    #[id = "freeze_phase"]
-    freeze_phase: BoolParam,
+    //#[id = "freeze_phase"]
+    //freeze_phase: BoolParam,
 }
 
 impl Default for PluginData {
@@ -65,7 +65,7 @@ impl Default for PluginParams {
 
             freeze_magnitudes: BoolParam::new("Freeze Magnitudes", false),
 
-            freeze_phase: BoolParam::new("Freeze Phase", false),
+            //freeze_phase: BoolParam::new("Freeze Phase", false),
         }
     }
 }
@@ -137,12 +137,12 @@ impl Plugin for PluginData {
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {      
         let mag_freeze = self.params.freeze_magnitudes.value();
-        let phase_freeze = self.params.freeze_phase.value();
+        //let phase_freeze = self.params.freeze_phase.value();
 
         for channel_samples in buffer.iter_samples() {
             // Smoothing is optionally built into the parameters themselves
             for (i, sample) in channel_samples.into_iter().enumerate() {
-                *sample = self.fft_processors[i].process_sample(*sample, mag_freeze, phase_freeze);
+                *sample = self.fft_processors[i].process_sample(*sample, mag_freeze);
             }
         }
 
