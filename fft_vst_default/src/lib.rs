@@ -60,7 +60,7 @@ impl Default for PluginParams {
 }
 
 impl Plugin for PluginData {
-    const NAME: &'static str = "fftgate";
+    const NAME: &'static str = "default_spectral_template";
     const VENDOR: &'static str = "";
     const URL: &'static str = env!("CARGO_PKG_HOMEPAGE");
     const EMAIL: &'static str = "";
@@ -148,8 +148,8 @@ impl Plugin for PluginData {
 }
 
 impl ClapPlugin for PluginData {
-    const CLAP_ID: &'static str = "fftgate";
-    const CLAP_DESCRIPTION: Option<&'static str> = Some("fftgate");
+    const CLAP_ID: &'static str = "default_spectral_template";
+    const CLAP_DESCRIPTION: Option<&'static str> = Some("default_spectral_template");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);
     const CLAP_SUPPORT_URL: Option<&'static str> = None;
 
@@ -158,7 +158,7 @@ impl ClapPlugin for PluginData {
 }
 
 impl Vst3Plugin for PluginData {
-    const VST3_CLASS_ID: [u8; 16] = *b"fft_gate________";
+    const VST3_CLASS_ID: [u8; 16] = *b"deflt_spec_templ";
 
     // And also don't forget to change these categories
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =

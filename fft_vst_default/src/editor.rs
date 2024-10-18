@@ -41,7 +41,7 @@ pub(crate) fn create(
 
         ResizeHandle::new(cx);
             VStack::new(cx, |cx| {
-                Label::new(cx, "MAEROR'S <plugin-name-here>")
+                Label::new(cx, "spectral template")
                 .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
                 .font_size(24.0)
                 .height(Pixels(75.0))
@@ -50,13 +50,6 @@ pub(crate) fn create(
                 .class("header-label");
 
                 HStack::new(cx, |cx| {
-                    Label::new(cx, "Threshold")
-                    .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
-                    .font_size(16.0)
-                    .left(Stretch(1.0))
-                    .right(Pixels(7.0))
-                    .top(Pixels(5.0));
-
                     //params go here \/
 
                 }).child_left(Stretch(1.0))

@@ -7,7 +7,6 @@ use crate::NUM_BINS;
 pub struct SpectralFrame {
     pub magnitudes: Vec<f32>,
     pub phases: Vec<f32>,
-    
 }
 
 impl SpectralFrame {
@@ -24,6 +23,7 @@ pub struct FFTFreeze {
     idx: usize,
     pub rand: StdRng,
     current_rand_read_idx: usize,
+    smooth_size: usize,
 }
 
 impl FFTFreeze {
@@ -33,6 +33,7 @@ impl FFTFreeze {
             idx: 0,
             rand: StdRng::from_entropy(),
             current_rand_read_idx: 0,
+            smooth_size: 3,
         }
     }
 
@@ -55,7 +56,7 @@ impl FFTFreeze {
             self.current_rand_read_idx += 1;
         }
 
-        if self.current_rand_read_idx == self.frames.len() - 1 {
+        if self.current_rand_read_idx == self.frames.len() - self.smooth_size {
             self.current_rand_read_idx -= 1;
         } else {
             let step = self.rand.gen_range(-1..=1);
@@ -73,6 +74,26 @@ impl FFTFreeze {
         }
 
         out_idx
+    }
+
+    pub fn get_next_frozen_frame(&mut self, target_mags: &mut Vec<f32>, target_phases: &mut Vec<f32>, force_idx: Option<usize>) -> usize {
+        let rand_idx = if force_idx.is_none() {
+            self.get_rand_frame_num()
+        } else {
+            force_idx.unwrap()
+        };
+        
+        for (i, (mag, phase)) in target_mags.iter_mut().zip(target_phases.iter_mut()).enumerate() {
+            *mag = 0.0f32;
+            *phase = 0.0f32;
+            for o in 0..self.smooth_size {
+                *mag += self.frames[rand_idx + o].magnitudes[i];
+                *phase += self.frames[rand_idx + o].phases[i]
+            }
+            *phase /= self.smooth_size as f32;
+        }
+
+        rand_idx
     }
 }
 

@@ -137,7 +137,8 @@ impl FFTProcessor {
         self.calculate_fft_values();
 
         if !f_mag {
-            self.freezer.record(&self.spectrum_mag, &self.spectrum_phase);
+            self.freezer
+                .record(&self.spectrum_mag, &self.spectrum_phase);
         }
 
         self.process_spectrum();
@@ -186,22 +187,26 @@ impl FFTProcessor {
         let len = self.ifft_in.len() - 1;
         self.ifft_in[len] = self.fft_out[len];
 
-        let freeze_idx = self.freezer.get_rand_frame_num();
+        let _ = self.freezer.get_next_frozen_frame(
+            &mut self.spectrum_mag,
+            &mut self.spectrum_phase,
+            None,
+        );
 
-        for i in 1..(self.fft_out.len() - 1) {
-            //nih_log!("processing gate no: {}", i);
-            let mag = if self.freeze_mags {
-                self.freezer.frames[freeze_idx].magnitudes[i]
-            } else {
-                self.spectrum_mag[i]
-            };
-            let phase = if self.freeze_mags {
-                self.freezer.frames[freeze_idx].phases[i]
-            } else {
-                self.spectrum_phase[i]
-            };
-            self.ifft_in[i] = Complex::from_polar(mag, phase);
-        }
+        // for i in 1..(self.fft_out.len() - 1) {
+        //     //nih_log!("processing gate no: {}", i);
+        //     let mag = if self.freeze_mags {
+        //         self.freezer.frames[freeze_idx].magnitudes[i]
+        //     } else {
+        //         self.spectrum_mag[i]
+        //     };
+        //     let phase = if self.freeze_mags {
+        //         self.freezer.frames[freeze_idx].phases[i]
+        //     } else {
+        //         self.spectrum_phase[i]
+        //     };
+        //     self.ifft_in[i] = Complex::from_polar(mag, phase);
+        // }
     }
 
     fn calculate_fft_values(&mut self) {

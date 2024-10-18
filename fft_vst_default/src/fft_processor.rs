@@ -159,7 +159,10 @@ impl FFTProcessor {
     }
 
     fn process_spectrum(&mut self) {
-        self.ifft_in = self.fft_out.clone();
+        //self.ifft_in = self.fft_out.clone();
+        for (i, x) in self.fft_out.iter().enumerate() {
+            self.ifft_in[i] = *x;
+        }
         // do yout processing here
     }
 

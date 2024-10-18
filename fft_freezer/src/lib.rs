@@ -3,18 +3,13 @@ use fft_processor::FFTProcessor;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
 use triple_buffer::TripleBuffer;
-use util::db_to_gain;
-use std::{env, f32::consts::PI, sync::{Arc, Mutex}};
+use std::{env, sync::{Arc, Mutex}};
 
 mod editor;
 mod fft_processor;
 mod utils;
 mod analyzer_data;
 mod fft_freeze;
-
-// This is a shortened version of the gain example with most comments removed, check out
-// https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
-// started
 
 const FFT_SIZE: usize = 4096;
 const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
@@ -38,9 +33,6 @@ pub struct PluginParams {
 
     #[id = "freeze_magnitudes"]
     freeze_magnitudes: BoolParam,
-
-    //#[id = "freeze_phase"]
-    //freeze_phase: BoolParam,
 }
 
 impl Default for PluginData {
