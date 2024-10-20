@@ -1,13 +1,23 @@
-use crate::NUM_BINS;
+use nih_plug::prelude::Enum;
+
+#[derive(Enum, Debug, Clone, Copy, PartialEq)]
+pub enum AnalyzerChannel {
+    Left,
+    Right,
+    Merged
+}
 
 #[derive(Debug, Clone)]
 pub struct AnalyzerData {
     pub num_bins: usize,
-    pub magnitudes: [f32; NUM_BINS],
+    pub magnitudes: Vec<f32>,
 }
 
-impl Default for AnalyzerData {
-    fn default() -> Self {
-        Self { num_bins: 0, magnitudes: [0.0; NUM_BINS] }
+impl AnalyzerData {
+    pub fn new(num_bins: usize, sr: usize) -> Self {
+        Self {
+            num_bins,
+            magnitudes: vec![0.0f32; num_bins],
+        }
     }
 }

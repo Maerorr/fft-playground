@@ -51,6 +51,7 @@ pub(crate) fn create(
 
                 HStack::new(cx, |cx| {
                     //params go here \/
+                    
 
                 }).child_left(Stretch(1.0))
                 .child_right(Stretch(1.0))
@@ -62,6 +63,47 @@ pub(crate) fn create(
                 .border_width(Pixels(2.0))
                 .border_color(Color::black())
                 .left(Pixels(1.0)).right(Pixels(1.0));
+
+                // BOTTOM BAR FOR MISC INFO IN ALL PLUGINS (FFT SIZE AND ANALYZER CHANNEL)
+                HStack::new(cx, |cx| {
+                    HStack::new(cx, |cx| {
+                        Label::new(cx, "FFT Size:")
+                        .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                        .font_size(13.0)
+                        .left(Stretch(1.0))
+                        .right(Pixels(7.0))
+                        .top(Pixels(5.0));
+
+                        ParamSlider::new(cx, EditorData::plugin_data, |params| &params.fft_size)
+                        .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                        .font_size(13.0)
+                        .top(Pixels(5.0))
+                        .max_width(Pixels(100.0))
+                        .max_height(Pixels(20.0));
+                    })
+                    .child_left(Stretch(1.0))
+                    .child_right(Stretch(1.0))
+                    .width(Pixels(230.0));
+                    HStack::new(cx, |cx| {
+                        Label::new(cx, "Analyzer Channel:")
+                        .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                        .font_size(13.0)
+                        .left(Stretch(1.0))
+                        .right(Pixels(7.0))
+                        .top(Pixels(5.0));
+
+                        ParamSlider::new(cx, EditorData::plugin_data, |params| &params.analyzer_channel).font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                        .font_size(13.0)
+                        .top(Pixels(5.0))
+                        .max_width(Pixels(100.0))
+                        .max_height(Pixels(20.0));
+                    })
+                    .child_left(Stretch(1.0))
+                    .child_right(Stretch(1.0))
+                    .width(Pixels(230.0));
+                }).child_left(Stretch(1.0))
+                .child_right(Stretch(1.0))
+                .max_height(Pixels(50.0));
                 
             }).row_between(Pixels(0.0))
             .child_left(Stretch(1.0))

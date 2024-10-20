@@ -20,6 +20,11 @@ pub fn f32_to_normalized_db(x: f32) -> f32 {
     db - 20.0 * (FFT_SIZE as f32 * 2.0f32.powi(16) / 2.0).log10()
 }
 
+#[inline]
+pub fn fft_size_to_bins(size: usize) -> usize {
+    (size / 2) + 1
+} 
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -57,6 +57,8 @@ impl FFTProcessor {
         let bin_width = sample_rate as f32 / FFT_SIZE as f32;
         let time_step = HOP_SIZE as f32 / sample_rate as f32;
 
+        //nih_log!("{} {}", NUM_BINS, ifft_in.len());
+
         Self {
             input_buffer: vec![0.0f32; FFT_SIZE],
             output_buffer: vec![0.0f32; FFT_SIZE],

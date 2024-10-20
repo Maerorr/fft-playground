@@ -1,19 +1,17 @@
-use analyzer_data::AnalyzerData;
+use analyzer_data::{AnalyzerChannel, AnalyzerData};
+use fft_core::{fft_size::FFTSize, stereo_fft_processor::StereoFFTProcessor};
 use fft_processor::FFTProcessor;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
 use triple_buffer::TripleBuffer;
 use util::db_to_gain;
-use std::{env, f32::consts::PI, sync::{Arc, Mutex}};
+use std::{env, f32::consts::PI, sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex}};
 
 mod editor;
 mod fft_processor;
+mod fft_core;
 mod utils;
 mod analyzer_data;
-
-// This is a shortened version of the gain example with most comments removed, check out
-// https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
-// started
 
 const FFT_SIZE: usize = 1024;
 const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
@@ -23,38 +21,50 @@ const HOP_SIZE: usize = FFT_SIZE / OVERLAP;
 const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 
 pub struct PluginData {
-    fft_processors: [FFTProcessor; 2],
+    stereo_fft_processor: StereoFFTProcessor,
     params: Arc<PluginParams>,
     //analyzer_input_data: Arc<Mutex<triple_buffer::Input<AnalyzerData>>>,
     analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
     sample_rate: Arc<AtomicF32>,
+    size_changed: Arc<AtomicBool>,
 }
 
 #[derive(Params)]
 pub struct PluginParams {
     #[persist = "editor-state"]
     editor_state: Arc<ViziaState>,
+
+    #[id = "fft-size"]
+    fft_size: EnumParam<FFTSize>,
+
+    #[id = "analyzer-channel"]
+    analyzer_channel: EnumParam<AnalyzerChannel>,
 }
 
 impl Default for PluginData {
     fn default() -> Self {
-        let (analyzer_input_data, analyzer_output_data) = TripleBuffer::default().split();
+        let (analyzer_input_data, analyzer_output_data) = TripleBuffer::new(&AnalyzerData::new(utils::fft_size_to_bins(FFTSize::_4096 as usize), 44100)).split();
+        let size_changed = Arc::new(AtomicBool::new(false));
         
-        let fft_proc1 = FFTProcessor::new(44100u32, Some(analyzer_input_data));
-        let fft_proc2 = FFTProcessor::new(44100u32, None);
         Self {
-            fft_processors: [fft_proc1, fft_proc2],
-            params: Arc::new(PluginParams::default()),
+            stereo_fft_processor: StereoFFTProcessor::new(44100, FFTSize::_1024 as usize,size_changed.clone(), None, analyzer_input_data),
+            params: Arc::new(PluginParams::new(size_changed.clone())),
             analyzer_output_data: Arc::new(Mutex::new(analyzer_output_data)),
             sample_rate: Arc::new(AtomicF32::new(1.0)),
+            size_changed: size_changed.clone(),
         }
     }
 }
 
-impl Default for PluginParams {
-    fn default() -> Self {
+impl PluginParams {
+    fn new(size_callback: Arc<AtomicBool>) -> Self {
         Self {
             editor_state: editor::default_state(),
+            fft_size: EnumParam::new("FFT Size", FFTSize::_1024)
+            .with_callback(Arc::new(move |_| {
+                    size_callback.store(true, Ordering::Release)
+                })),
+            analyzer_channel: EnumParam::new("Analyzer Channel", AnalyzerChannel::Merged),
         }
     }
 }
@@ -110,6 +120,7 @@ impl Plugin for PluginData {
         // Resize buffers and perform other potentially expensive initialization operations here.
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
+        self.stereo_fft_processor.set_sample_rate(_buffer_config.sample_rate as usize);
         self.sample_rate.store(_buffer_config.sample_rate, std::sync::atomic::Ordering::Relaxed);
         true
     }
@@ -117,6 +128,8 @@ impl Plugin for PluginData {
     fn reset(&mut self) {
         // Reset buffers and envelopes here. This can be called from the audio thread and may not
         // allocate. You can remove this function if you do not need it.
+        let new_size = self.params.fft_size.value();
+        self.stereo_fft_processor.change_fft_size(new_size as usize);
     }
 
     fn process(
@@ -125,11 +138,25 @@ impl Plugin for PluginData {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {      
-        for channel_samples in buffer.iter_samples() {
+        let an_chan = self.params.analyzer_channel.value();
+        let fft_size = self.params.fft_size.value();
+
+        if self.size_changed.load(Ordering::Relaxed) {
+            self.stereo_fft_processor.change_fft_size(fft_size as usize);
+            self.size_changed.store(false, Ordering::Relaxed);
+        }
+
+        self.stereo_fft_processor.set_params(an_chan);
+
+        for mut channel_samples in buffer.iter_samples() {
             // Smoothing is optionally built into the parameters themselves
-            for (i, sample) in channel_samples.into_iter().enumerate() {
-                *sample = self.fft_processors[i].process_sample(*sample);
-            }
+            let output_samples = self.stereo_fft_processor.process_sample(
+                [*channel_samples.get_mut(0).unwrap(), 
+                *channel_samples.get_mut(1).unwrap()]
+            );
+            
+            *channel_samples.get_mut(0).unwrap() = output_samples[0];
+            *channel_samples.get_mut(1).unwrap() = output_samples[1];
         }
 
         ProcessStatus::Normal
@@ -138,9 +165,9 @@ impl Plugin for PluginData {
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
             self.params.editor_state.clone(),
-            editor::EditorData {
+           editor::EditorData {
                 plugin_data: self.params.clone(),
-                analyzer_data:self.analyzer_output_data.clone(),
+                analyzer_data: self.analyzer_output_data.clone(),
                 sample_rate: self.sample_rate.clone(),
             }
         )
