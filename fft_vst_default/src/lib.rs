@@ -1,6 +1,5 @@
 use analyzer_data::{AnalyzerChannel, AnalyzerData};
 use fft_core::{fft_size::FFTSize, stereo_fft_processor::StereoFFTProcessor};
-use fft_processor::FFTProcessor;
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
 use triple_buffer::TripleBuffer;
@@ -8,22 +7,20 @@ use util::db_to_gain;
 use std::{env, f32::consts::PI, sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex}};
 
 mod editor;
-mod fft_processor;
 mod fft_core;
 mod utils;
 mod analyzer_data;
 
-const FFT_SIZE: usize = 1024;
-const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
-const NUM_BINS: usize = FFT_SIZE / 2 + 1;
-const OVERLAP: usize = 4;
-const HOP_SIZE: usize = FFT_SIZE / OVERLAP;
+// const FFT_SIZE: usize = 1024;
+// const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
+// const NUM_BINS: usize = FFT_SIZE / 2 + 1;
+// const OVERLAP: usize = 4;
+// const HOP_SIZE: usize = FFT_SIZE / OVERLAP;
 const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 
 pub struct PluginData {
     stereo_fft_processor: StereoFFTProcessor,
     params: Arc<PluginParams>,
-    //analyzer_input_data: Arc<Mutex<triple_buffer::Input<AnalyzerData>>>,
     analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
     sample_rate: Arc<AtomicF32>,
     size_changed: Arc<AtomicBool>,
@@ -47,7 +44,7 @@ impl Default for PluginData {
         let size_changed = Arc::new(AtomicBool::new(false));
         
         Self {
-            stereo_fft_processor: StereoFFTProcessor::new(44100, FFTSize::_1024 as usize,size_changed.clone(), None, analyzer_input_data),
+            stereo_fft_processor: StereoFFTProcessor::new(44100, FFTSize::_1024 as usize,size_changed.clone(), analyzer_input_data),
             params: Arc::new(PluginParams::new(size_changed.clone())),
             analyzer_output_data: Arc::new(Mutex::new(analyzer_output_data)),
             sample_rate: Arc::new(AtomicF32::new(1.0)),

@@ -7,7 +7,6 @@ pub struct FFTData {
 
     pub fft_in: Vec<f32>,
     pub fft_out: Vec<Complex<f32>>,
-    pub ifft_in: Vec<Complex<f32>>,
     pub ifft_out: Vec<f32>, 
 
     pub spectrum_mag: Vec<f32>,
@@ -24,9 +23,8 @@ impl FFTData {
         let c2r = planner.plan_fft_inverse(fft_size);
         let fft_in = r2c.make_input_vec();
         let fft_out = r2c.make_output_vec();
-        let ifft_in = c2r.make_input_vec();
         let ifft_out = c2r.make_output_vec();
-        let num_bins = ifft_in.len();
+        let num_bins = fft_out.len();
 
         Self {
             planner, 
@@ -34,7 +32,6 @@ impl FFTData {
             c2r,
             fft_in,
             fft_out,
-            ifft_in,
             ifft_out,
             spectrum_mag: vec![0f32; num_bins],
             spectrum_phase: vec![0f32; num_bins],
@@ -48,10 +45,9 @@ impl FFTData {
         self.c2r = self.planner.plan_fft_inverse(new_fft_size);
         self.fft_in = self.r2c.make_input_vec();
         self.fft_out = self.r2c.make_output_vec();
-        self.ifft_in = self.c2r.make_input_vec();
         self.ifft_out = self.c2r.make_output_vec();
         
-        let num_bins = self.ifft_in.len();
+        let num_bins = self.fft_out.len();
         self.spectrum_mag.resize(num_bins, 0.0f32);
         self.spectrum_phase.resize(num_bins, 0.0f32);
         self.spectrum_db.resize(num_bins, 0.0f32);
