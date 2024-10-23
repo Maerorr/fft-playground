@@ -86,6 +86,9 @@ impl StereoFFTProcessor {
         self.input_buffer[1].resize(new_size, 0f32);
         self.output_buffer[1].resize(new_size, 0f32);
 
+        self.ifft_in[0] = self.data[0].c2r.make_input_vec();
+        self.ifft_in[1] = self.data[0].c2r.make_input_vec();
+
         self.pos = 0;
         self.count_to_next_hop = 0;
     }

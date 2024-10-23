@@ -18,11 +18,6 @@ mod fft_gate_effect;
 // https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
 // started
 
-const FFT_SIZE: usize = 1024;
-const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
-const NUM_BINS: usize = FFT_SIZE / 2 + 1;
-const OVERLAP: usize = 4;
-const HOP_SIZE: usize = FFT_SIZE / OVERLAP;
 const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 
 pub struct FFTGate {
@@ -139,6 +134,8 @@ impl Plugin for FFTGate{
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
         self.stereo_fft_processor.set_sample_rate(_buffer_config.sample_rate as usize);
+        let new_size = self.params.fft_size.value();
+        self.stereo_fft_processor.change_fft_size(new_size as usize);
         self.sample_rate.store(_buffer_config.sample_rate, std::sync::atomic::Ordering::Relaxed);
         true
     }
@@ -163,6 +160,7 @@ impl Plugin for FFTGate{
 
         if self.size_changed.load(Ordering::Relaxed) {
             self.stereo_fft_processor.change_fft_size(fft_size as usize);
+            _context.set_latency_samples(fft_size as u32);
             self.size_changed.store(false, Ordering::Relaxed);
         }
 

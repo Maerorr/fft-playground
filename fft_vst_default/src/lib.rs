@@ -117,6 +117,8 @@ impl Plugin for PluginData {
         // Resize buffers and perform other potentially expensive initialization operations here.
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
+        let new_size = self.params.fft_size.value();
+        self.stereo_fft_processor.change_fft_size(new_size as usize);
         self.stereo_fft_processor.set_sample_rate(_buffer_config.sample_rate as usize);
         self.sample_rate.store(_buffer_config.sample_rate, std::sync::atomic::Ordering::Relaxed);
         true
@@ -139,6 +141,7 @@ impl Plugin for PluginData {
         let fft_size = self.params.fft_size.value();
 
         if self.size_changed.load(Ordering::Relaxed) {
+            _context.set_latency_samples(fft_size as u32);
             self.stereo_fft_processor.change_fft_size(fft_size as usize);
             self.size_changed.store(false, Ordering::Relaxed);
         }

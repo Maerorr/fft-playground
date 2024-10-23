@@ -1,5 +1,3 @@
-use crate::FFT_SIZE;
-
 pub const MINUS_INF_DB: f32 = -100f32;
 pub const MINUS_INF_GAIN: f32 = 1e-5;
 
