@@ -52,5 +52,10 @@ impl FFTData {
         self.spectrum_phase.resize(num_bins, 0.0f32);
         self.spectrum_db.resize(num_bins, 0.0f32);
         self.spectrum_freq.resize(num_bins, 0.0f32);
+
+        self.spectrum_mag.fill(0.0f32);
+        self.spectrum_phase.fill(0.0f32);
+        self.spectrum_db.fill(0.0f32);
+        self.spectrum_freq.fill(0.0f32);
     }
 }

@@ -175,6 +175,7 @@ impl Plugin for PluginData {
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
         let new_size = self.params.fft_size.value();
+        _context.set_latency_samples(new_size as u32);
         self.stereo_fft_processor.change_fft_size(new_size as usize);
         self.stereo_fft_processor
             .set_sample_rate(_buffer_config.sample_rate as usize);
@@ -211,8 +212,7 @@ impl Plugin for PluginData {
         let lowcut = self.params.lowcut.value();
         let highcut = self.params.highcut.value();
 
-        self.stereo_fft_processor
-            .set_params(an_chan, side_gain, lowcut, highcut);
+        self.stereo_fft_processor.set_params(an_chan, side_gain, lowcut, highcut);
 
         for (mut channel_samples, mut aux_channel_samples) in
             buffer.iter_samples().zip(_aux.inputs[0].iter_samples())

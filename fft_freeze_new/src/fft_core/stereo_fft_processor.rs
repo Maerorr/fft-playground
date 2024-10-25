@@ -83,11 +83,11 @@ impl StereoFFTProcessor {
 
         self.fft_effect.resize(new_size);
 
-        //self.input_buffer[0].resize(new_size, 0f32);
-        //self.output_buffer[0].resize(new_size, 0f32);
-//
-        //self.input_buffer[1].resize(new_size, 0f32);
-        //self.output_buffer[1].resize(new_size, 0f32);
+        self.input_buffer[0].resize(new_size, 0f32);
+        self.output_buffer[0].resize(new_size, 0f32);
+
+        self.input_buffer[1].resize(new_size, 0f32);
+        self.output_buffer[1].resize(new_size, 0f32);
         
         self.ifft_in[0].resize(fft_size_to_bins(new_size), Complex::zero());//self.data[0].c2r.make_input_vec();
         self.ifft_in[1].resize(fft_size_to_bins(new_size), Complex::zero());//self.data[0].c2r.make_input_vec();

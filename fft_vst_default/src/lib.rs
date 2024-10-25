@@ -118,6 +118,7 @@ impl Plugin for PluginData {
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
         let new_size = self.params.fft_size.value();
+        _context.set_latency_samples(new_size as u32);
         self.stereo_fft_processor.change_fft_size(new_size as usize);
         self.stereo_fft_processor.set_sample_rate(_buffer_config.sample_rate as usize);
         self.sample_rate.store(_buffer_config.sample_rate, std::sync::atomic::Ordering::Relaxed);

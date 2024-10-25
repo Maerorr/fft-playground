@@ -1,9 +1,9 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
 use nih_plug::{nih_log, util};
-use realfft::num_complex::{Complex, Complex32};
+use realfft::{num_complex::{Complex, Complex32}, num_traits::Zero};
 
-use crate::{analyzer_data::{AnalyzerChannel, AnalyzerData}, utils, WINDOW_CORRECTION};
+use crate::{analyzer_data::{AnalyzerChannel, AnalyzerData}, utils::{self, fft_size_to_bins}, WINDOW_CORRECTION};
 
 use super::{fft_data::FFTData, fft_size::FFTSize, peacemaker::Peacemaker};
 
@@ -85,16 +85,24 @@ impl StereoFFTProcessor {
         self.data[0].fft_size_change(new_size);
         self.data[1].fft_size_change(new_size);
 
+        self.aux_data[0].fft_size_change(new_size);
+        self.aux_data[1].fft_size_change(new_size);
+    
         self.fft_size = new_size;
 
         self.input_buffer[0].resize(new_size, 0f32);
         self.output_buffer[0].resize(new_size, 0f32);
+        self.aux_buffer[0].resize(new_size, 0f32);
 
         self.input_buffer[1].resize(new_size, 0f32);
         self.output_buffer[1].resize(new_size, 0f32);
+        self.aux_buffer[1].resize(new_size, 0f32);
 
-        self.ifft_in[0] = self.data[0].c2r.make_input_vec();
-        self.ifft_in[1] = self.data[0].c2r.make_input_vec();
+        self.ifft_in[0].resize(fft_size_to_bins(new_size), Complex::zero());
+        self.ifft_in[1].resize(fft_size_to_bins(new_size), Complex::zero());
+
+        self.ifft_in[0].fill(Complex::zero());
+        self.ifft_in[1].fill(Complex::zero());
 
         self.pos = 0;
         self.count_to_next_hop = 0;
@@ -200,6 +208,7 @@ impl StereoFFTProcessor {
             }
             for i in 1..(self.aux_data[channel].fft_out.len() - 1) {
                 self.aux_data[channel].spectrum_mag[i] = self.aux_data[channel].fft_out[i].norm();
+                self.aux_data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
             }
         }
     }
@@ -210,6 +219,7 @@ impl StereoFFTProcessor {
             [&self.data[0].spectrum_phase, &self.data[1].spectrum_phase],
             [&self.data[0].spectrum_db, &self.data[1].spectrum_db],
             [&self.data[0].spectrum_freq, &self.data[1].spectrum_freq],
+            [&self.aux_data[0].spectrum_db, &self.aux_data[1].spectrum_db],
             [&self.aux_data[0].spectrum_mag, &self.aux_data[1].spectrum_mag],
             &mut self.ifft_in
         );
@@ -218,10 +228,10 @@ impl StereoFFTProcessor {
     fn calculate_analyzer_db(&mut self) {
         for channel in 0..2 {
             for i in 1..(utils::fft_size_to_bins(self.fft_size) - 1) {
-                // self.data[channel].spectrum_mag[i] = self.ifft_in[channel][i].norm();
-                // self.data[channel].spectrum_db[i] = util::gain_to_db(self.data[channel].spectrum_mag[i]);
-                self.data[channel].spectrum_mag[i] = self.aux_data[channel].spectrum_mag[i];
-                self.data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
+                self.data[channel].spectrum_mag[i] = self.ifft_in[channel][i].norm();
+                self.data[channel].spectrum_db[i] = util::gain_to_db(self.data[channel].spectrum_mag[i]);
+                //self.data[channel].spectrum_mag[i] = self.aux_data[channel].spectrum_mag[i];
+                //self.data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
             }
         }
     }
