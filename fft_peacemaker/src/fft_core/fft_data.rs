@@ -36,7 +36,7 @@ impl FFTData {
             spectrum_mag: vec![0f32; num_bins],
             spectrum_phase: vec![0f32; num_bins],
             spectrum_freq: vec![0f32; num_bins],
-            spectrum_db: vec![0f32; num_bins],
+            spectrum_db: vec![-120f32; num_bins],
         }
     }
 
@@ -50,12 +50,12 @@ impl FFTData {
         let num_bins = self.fft_out.len();
         self.spectrum_mag.resize(num_bins, 0.0f32);
         self.spectrum_phase.resize(num_bins, 0.0f32);
-        self.spectrum_db.resize(num_bins, 0.0f32);
+        self.spectrum_db.resize(num_bins, -120.0f32);
         self.spectrum_freq.resize(num_bins, 0.0f32);
 
         self.spectrum_mag.fill(0.0f32);
         self.spectrum_phase.fill(0.0f32);
-        self.spectrum_db.fill(0.0f32);
+        self.spectrum_db.fill(-120.0f32);
         self.spectrum_freq.fill(0.0f32);
     }
 }

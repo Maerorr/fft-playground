@@ -47,6 +47,9 @@ pub struct PluginParams {
     #[id = "highcut"]
     highcut: FloatParam,
 
+    #[id = "stereo-link"]
+    stereo_link: BoolParam,
+
     #[id = "fft-size"]
     fft_size: EnumParam<FFTSize>,
 
@@ -102,18 +105,6 @@ impl PluginParams {
 
             lowcut: FloatParam::new(
                 "LowCut",
-                20_000.0,
-                FloatRange::Skewed {
-                    min: 100.0,
-                    max: 20_000.0,
-                    factor: 0.3,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2))
-            .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
-
-            highcut: FloatParam::new(
-                "HighCut",
                 50.0,
                 FloatRange::Skewed {
                     min: 20.0,
@@ -123,6 +114,23 @@ impl PluginParams {
             )
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(2))
             .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
+
+            highcut: FloatParam::new(
+                "HighCut",
+                20_000.0,
+                FloatRange::Skewed {
+                    min: 20.0,
+                    max: 20_000.0,
+                    factor: 0.3,
+                },
+            )
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2))
+            .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
+
+            stereo_link: BoolParam::new(
+                "Stereo Link",
+                false
+            ),
         }
     }
 }
@@ -211,8 +219,9 @@ impl Plugin for PluginData {
         let side_gain = self.params.sidechain_gain.value();
         let lowcut = self.params.lowcut.value();
         let highcut = self.params.highcut.value();
+        let stereo_link = self.params.stereo_link.value();
 
-        self.stereo_fft_processor.set_params(an_chan, side_gain, lowcut, highcut);
+        self.stereo_fft_processor.set_params(an_chan, side_gain, lowcut, highcut, stereo_link);
 
         for (mut channel_samples, mut aux_channel_samples) in
             buffer.iter_samples().zip(_aux.inputs[0].iter_samples())

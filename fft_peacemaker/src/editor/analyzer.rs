@@ -51,6 +51,8 @@ impl View for Analyzer {
         let sr = self.sample_rate.load(Ordering::Relaxed);
         let nyquist = sr / 2.0;
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
+        draw_reduction(cx, canvas, analyzer_data, nyquist, sr);
+        draw_cutoffs(cx, canvas, analyzer_data, nyquist, sr);
 
         // draw border
         let border_width = cx.border_width();
@@ -123,5 +125,78 @@ fn draw_spectrum(
 
     let bars_paint = vg::Paint::color(vg::Color::rgb(25, 25, 25)).with_line_width(1.0);
     canvas.stroke_path(&bars_path, &bars_paint);
+}
 
+pub fn draw_reduction(
+    cx: &mut DrawContext,
+    canvas: &mut Canvas,
+    analyzer_data: &AnalyzerData,
+    nyquist_hz: f32,
+    sr: f32,
+) {
+    let bounds = cx.bounds();
+    let border_width = cx.border_width();
+    let bin_frequency = |bin_idx: f32| (bin_idx / analyzer_data.num_bins as f32) * nyquist_hz;
+    // A `[0, 1]` value indicating at which relative x-coordinate a bin should be drawn at
+    let fq_start = (sr / (analyzer_data.num_bins * 2) as f32).ln();
+    let fq_end = (((analyzer_data.num_bins - 1) as f32 * sr) / (analyzer_data.num_bins * 2) as f32).ln();
+    let range = fq_end - fq_start;
+
+    let bin_x =
+        |bin_idx: f32| (bin_frequency(bin_idx).ln() - fq_start) / range;
+
+    let mut bars_path = vg::Path::new();
+    bars_path.move_to(bounds.x + border_width / 2f32, bounds.y + bounds.h);
+    
+    for (bin_idx, red) in analyzer_data
+        .reduction
+        .iter()
+        .enumerate()
+        .take(analyzer_data.num_bins - 1)
+        .skip(1)
+    {
+        let x = bin_x(bin_idx as f32);
+        
+        let physical_x_coord = (bounds.x + (bounds.w * x) + border_width) * 0.99f32;
+        let height = 1.0 - (red / 50.0).clamp(0.0, 1.0);
+
+        bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+        bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+    }
+
+    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 25, 185)).with_line_width(1.0);
+    canvas.stroke_path(&bars_path, &bars_paint);
+}
+
+pub fn draw_cutoffs(
+    cx: &mut DrawContext,
+    canvas: &mut Canvas,
+    analyzer_data: &AnalyzerData,
+    nyquist_hz: f32,
+    sr: f32,
+) {
+    let bounds = cx.bounds();
+    let border_width = cx.border_width();
+    // A `[0, 1]` value indicating at which relative x-coordinate a bin should be drawn at
+    let fq_start = (sr / (analyzer_data.num_bins * 2) as f32).ln();
+    let fq_end = (((analyzer_data.num_bins - 1) as f32 * sr) / (analyzer_data.num_bins * 2) as f32).ln();
+    let range = fq_end - fq_start;
+
+    let freq_to_x =
+        |f: f32| (f.ln() - fq_start) / range;
+
+    let mut bars_path = vg::Path::new();
+    
+    let lowcut_x = (bounds.x + (bounds.w * freq_to_x(analyzer_data.lowcut)) + border_width) * 0.99f32;
+    bars_path.move_to(lowcut_x, bounds.y + (bounds.h));
+    bars_path.line_to(lowcut_x, bounds.y);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 200, 25)).with_line_width(1.0);
+    canvas.stroke_path(&bars_path, &bars_paint);
+
+    let mut bars_path = vg::Path::new();
+    let highcut_x = (bounds.x + (bounds.w * freq_to_x(analyzer_data.highcut)) + border_width) * 0.99f32;
+    bars_path.move_to(highcut_x, bounds.y + (bounds.h));
+    bars_path.line_to(highcut_x, bounds.y);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 200, 25)).with_line_width(1.0);
+    canvas.stroke_path(&bars_path, &bars_paint);
 }

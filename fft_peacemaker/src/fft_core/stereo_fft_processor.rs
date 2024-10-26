@@ -66,13 +66,13 @@ impl StereoFFTProcessor {
 
             size_changed,
 
-            fft_effect: Peacemaker::new(),
+            fft_effect: Peacemaker::new(utils::fft_size_to_bins(fft_size)),
         }
     }
 
-    pub fn set_params(&mut self, an_chan: AnalyzerChannel, side_gain: f32, low: f32, high: f32) {
+    pub fn set_params(&mut self, an_chan: AnalyzerChannel, side_gain: f32, low: f32, high: f32, s_link: bool) {
         self.analyzer_channel = an_chan;
-        self.fft_effect.set_params(side_gain, low, high);
+        self.fft_effect.set_params(side_gain, low, high, s_link);
     }
 
     pub fn set_sample_rate(&mut self, sr: usize) {
@@ -106,6 +106,8 @@ impl StereoFFTProcessor {
 
         self.pos = 0;
         self.count_to_next_hop = 0;
+
+        self.fft_effect.resize(fft_size_to_bins(new_size));
     }
 
     pub fn process_sample(&mut self, samples_lr: [f32; 2], aux_samples_lr: [f32; 2]) -> [f32; 2] {
@@ -200,7 +202,6 @@ impl StereoFFTProcessor {
     fn calculate_fft_values(&mut self) {
         for channel in 0..2 {
             for i in 1..(self.data[channel].fft_out.len() - 1) {
-
                 self.data[channel].spectrum_mag[i] = self.data[channel].fft_out[i].norm();
                 self.data[channel].spectrum_phase[i] = self.data[channel].fft_out[i].arg();
                 self.data[channel].spectrum_db[i] = util::gain_to_db(self.data[channel].spectrum_mag[i]);
@@ -237,34 +238,51 @@ impl StereoFFTProcessor {
     }
 
     fn handle_analyzer(&mut self) {
-        match self.analyzer_channel {
-            AnalyzerChannel::Left => {
-                let analyzer_input = self.analyzer_input_data.input_buffer();
-                analyzer_input.magnitudes.fill(0.0f32);
-                analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
-                for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
-                    *mag = self.data[0].spectrum_db[i];
-                }
-                self.analyzer_input_data.publish();
-            },
-            AnalyzerChannel::Right => {
-                let analyzer_input = self.analyzer_input_data.input_buffer();
-                analyzer_input.magnitudes.fill(0.0f32);
-                analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
-                for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
-                    *mag = self.data[1].spectrum_db[i];
-                }
-                self.analyzer_input_data.publish();
-            },
-            AnalyzerChannel::Merged => {
-                let analyzer_input = self.analyzer_input_data.input_buffer();
-                analyzer_input.magnitudes.fill(0.0f32);
-                analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
-                for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
-                    *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
-                }
-                self.analyzer_input_data.publish();
-            },
+
+        let analyzer_input = self.analyzer_input_data.input_buffer();
+        analyzer_input.magnitudes.fill(0.0f32);
+        analyzer_input.reduction.fill(0.0f32);
+        analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
+        for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+            *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
         }
+        
+        analyzer_input.lowcut = self.fft_effect.lowcut;
+        analyzer_input.highcut = self.fft_effect.highcut;
+
+        for (i, reduction) in analyzer_input.reduction[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+            *reduction = self.fft_effect.reduction[i];
+        }
+        self.analyzer_input_data.publish();
+
+        // match self.analyzer_channel {
+        //     AnalyzerChannel::Left => {
+        //         let analyzer_input = self.analyzer_input_data.input_buffer();
+        //         analyzer_input.magnitudes.fill(0.0f32);
+        //         analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
+        //         for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+        //             *mag = self.data[0].spectrum_db[i];
+        //         }
+        //         self.analyzer_input_data.publish();
+        //     },
+        //     AnalyzerChannel::Right => {
+        //         let analyzer_input = self.analyzer_input_data.input_buffer();
+        //         analyzer_input.magnitudes.fill(0.0f32);
+        //         analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
+        //         for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+        //             *mag = self.data[1].spectrum_db[i];
+        //         }
+        //         self.analyzer_input_data.publish();
+        //     },
+        //     AnalyzerChannel::Merged => {
+        //         let analyzer_input = self.analyzer_input_data.input_buffer();
+        //         analyzer_input.magnitudes.fill(0.0f32);
+        //         analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
+        //         for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+        //             *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
+        //         }
+        //         self.analyzer_input_data.publish();
+        //     },
+        // }
     }
 }

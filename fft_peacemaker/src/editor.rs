@@ -17,7 +17,7 @@ pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.tt
 pub const COMFORTAA: &str = "Comfortaa";
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (500, 350))
+    ViziaState::new(|| (600, 450))
 }
 
 #[derive(Clone, Lens)]
@@ -60,6 +60,30 @@ pub(crate) fn create(
 
                 ParamSlider::new(cx, EditorData::plugin_data, |params| &params.sidechain_gain);
 
+            }).child_left(Stretch(1.0))
+            .child_right(Stretch(1.0))
+            .max_height(Pixels(50.0));
+
+            HStack::new(cx, |cx| {
+                //params go here \/
+                Label::new(cx, "Lowcut")
+                    .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                    .font_size(16.0)
+                    .left(Stretch(1.0))
+                    .right(Pixels(7.0))
+                    .top(Pixels(5.0));
+
+                ParamSlider::new(cx, EditorData::plugin_data, |params| &params.lowcut)
+                .right(Pixels(20.0));
+
+                Label::new(cx, "Highcut")
+                    .font_family(vec![FamilyOwned::Name(String::from(COMFORTAA))])
+                    .font_size(16.0)
+                    .left(Pixels(20.0))
+                    .right(Pixels(7.0))
+                    .top(Pixels(5.0));
+
+                ParamSlider::new(cx, EditorData::plugin_data, |params| &params.highcut);
             }).child_left(Stretch(1.0))
             .child_right(Stretch(1.0))
             .max_height(Pixels(50.0));
