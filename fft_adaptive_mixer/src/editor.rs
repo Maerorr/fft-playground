@@ -53,13 +53,24 @@ pub(crate) fn create(
 
             HStack::new(cx, |cx| {
                 //params go here \/
-                VStack::new(cx, |cx| {})
-                    .row_between(Pixels(0.0))
-                    .child_left(Stretch(1.0))
-                    .child_right(Stretch(1.0))
-                    .width(Pixels(200.0))
-                    .height(Pixels(480.0))
-                    .background_color(Color::gray());
+                VStack::new(cx, |cx| {
+                    for _ in 0..3 {
+                        ParamKnob::new(
+                            cx,
+                            EditorData::plugin_data,
+                            |params| &params.test_param,
+                            true,
+                            String::from("main"),
+                        )
+                        .width(Pixels(160.0));
+                    }
+                })
+                .row_between(Pixels(0.0))
+                .child_left(Stretch(1.0))
+                .child_right(Stretch(1.0))
+                .width(Pixels(200.0))
+                .height(Pixels(480.0))
+                .background_color(Color::gray());
 
                 VStack::new(cx, |cx| {
                     Analyzer::new(cx, EditorData::analyzer_data, EditorData::sample_rate)
@@ -78,9 +89,9 @@ pub(crate) fn create(
                                 EditorData::plugin_data,
                                 |params| &params.test_param,
                                 true,
+                                String::from("eq"),
                             );
                         }
-                        
                     })
                     .left(Pixels(1.0))
                     .right(Pixels(1.0))

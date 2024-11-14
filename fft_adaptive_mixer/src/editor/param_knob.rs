@@ -1,4 +1,5 @@
 use nih_plug::prelude::Param;
+use nih_plug_vizia::vizia::image::Pixels;
 use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::widgets::param_base::ParamWidgetBase;
 
@@ -20,6 +21,7 @@ impl ParamKnob {
         params: L,
         params_to_param: FMap,
         centered: bool,
+        css_prefix: String,
     ) -> Handle<Self>
     where
         L: Lens<Target = Params> + Clone + Copy,
@@ -80,7 +82,10 @@ impl ParamKnob {
                             .class("track")
                         },
                     )
-                    .space(Stretch(1.0))
+                    .left(Stretch(1.0))
+                    .right(Stretch(1.0))
+                    .top(Stretch(1.0))
+                    .bottom(Percentage(-20.0))
                     .on_mouse_down(move |cx, _button| {
                         cx.emit(ParamEvent::BeginSetParam);
                     })
@@ -90,7 +95,8 @@ impl ParamKnob {
                     .on_mouse_up(move |cx, _button| {
                         cx.emit(ParamEvent::EndSetParam);
                     })
-                    .class("param-knob");
+                    .class(format!("{}-param-knob", css_prefix).as_str());
+                    //.background_color(Color::yellow());
 
                     Label::new(
                         cx,
@@ -98,9 +104,10 @@ impl ParamKnob {
                     )
                     .class("param-name")
                     .left(Stretch(1.0))
-                    .right(Stretch(1.0));
+                    .right(Stretch(1.0))
+                    .bottom(Percentage(10.0));
                 })
-                .class("param-knob-whole");
+                .class(format!("{}-param-knob-whole", css_prefix).as_str());
             }),
         )
     }
