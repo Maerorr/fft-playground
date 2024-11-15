@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 pub const MINUS_INF_DB: f32 = -100f32;
 pub const MINUS_INF_GAIN: f32 = 1e-5;
 
@@ -30,6 +32,13 @@ pub fn fft_size_to_bins(size: usize) -> usize {
     (size / 2) + 1
 } 
 
+#[inline]
+pub fn gauss(x: f32, sig: f32) -> f32 {
+    let sig_clamped = sig.max(0.001f32);
+    (1.0 / (sig_clamped * (2.0 * PI).sqrt())) *
+    (-0.5 * (x * x)/(sig_clamped * sig_clamped)).exp()
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -55,5 +64,13 @@ mod tests {
         multiply_vectors_in_place(&mut a, &b);
 
         assert_eq!(expected, a);
+    }
+
+    #[test]
+    fn gauss_test() {
+        let expected = 1.9947f32;
+        let val = gauss(0.0, 0.2f32);
+        print!("expected: {}, value: {}", expected, val);
+        assert!((val - expected).abs() < 0.001);
     }
 }

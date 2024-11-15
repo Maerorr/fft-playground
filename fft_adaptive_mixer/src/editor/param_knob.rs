@@ -1,5 +1,5 @@
 use nih_plug::prelude::Param;
-use nih_plug_vizia::vizia::image::Pixels;
+use nih_plug_vizia::vizia::image::{Pixel, Pixels};
 use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::widgets::param_base::ParamWidgetBase;
 
@@ -22,6 +22,7 @@ impl ParamKnob {
         params_to_param: FMap,
         centered: bool,
         css_prefix: String,
+        display_value: bool,
     ) -> Handle<Self>
     where
         L: Lens<Target = Params> + Clone + Copy,
@@ -36,22 +37,27 @@ impl ParamKnob {
             cx,
             ParamWidgetBase::build_view(params, params_to_param, move |cx, param_data| {
                 VStack::new(cx, |cx| {
-                    // Label::new(
-                    //     cx,
-                    //     params.map(move |params| {
-                    //         params_to_param(params)
-                    //             .normalized_value_to_string(
-                    //                 params_to_param(params)
-                    //                     .modulated_normalized_value()
-                    //                     .to_owned(),
-                    //                 true,
-                    //             )
-                    //             .to_owned()
-                    //     }),
-                    // )
-                    // .class("param-label")
-                    // .space(Stretch(1.0));
-
+                    if display_value {
+                        Label::new(
+                            cx,
+                            params.map(move |params| {
+                                params_to_param(params)
+                                    .normalized_value_to_string(
+                                        params_to_param(params)
+                                            .modulated_normalized_value()
+                                            .to_owned(),
+                                        true,
+                                    )
+                                    .to_owned()
+                            }),
+                        )
+                        .class("param-label")
+                        .left(Stretch(1.0))
+                        .right(Stretch(1.0))
+                        //.height(Pixels(25.0))
+                        .top(Pixels(4.0));
+                    }
+                    
                     Knob::custom(
                         cx,
                         param_data.param().default_normalized_value(),

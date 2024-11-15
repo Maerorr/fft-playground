@@ -2,6 +2,7 @@ use analyzer_data::{AnalyzerChannel, AnalyzerData};
 use fft_core::{fft_size::FFTSize, stereo_fft_processor::StereoFFTProcessor};
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
+use params::PluginParams;
 use std::{
     env,
     f32::consts::PI,
@@ -17,6 +18,7 @@ mod analyzer_data;
 mod editor;
 mod fft_core;
 mod utils;
+mod params;
 
 // const FFT_SIZE: usize = 1024;
 // const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
@@ -31,33 +33,6 @@ pub struct PluginData {
     analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
     sample_rate: Arc<AtomicF32>,
     size_changed: Arc<AtomicBool>,
-}
-
-#[derive(Params)]
-pub struct PluginParams {
-    #[persist = "editor-state"]
-    editor_state: Arc<ViziaState>,
-
-    #[id = "sidechain-gain"]
-    sidechain_gain: FloatParam,
-
-    #[id = "lowcut"]
-    lowcut: FloatParam,
-
-    #[id = "highcut"]
-    highcut: FloatParam,
-
-    #[id = "test"]
-    test_param: FloatParam,
-
-    #[id = "stereo-link"]
-    stereo_link: BoolParam,
-
-    #[id = "fft-size"]
-    fft_size: EnumParam<FFTSize>,
-
-    #[id = "analyzer-channel"]
-    analyzer_channel: EnumParam<AnalyzerChannel>,
 }
 
 impl Default for PluginData {
@@ -84,60 +59,6 @@ impl Default for PluginData {
     }
 }
 
-impl PluginParams {
-    fn new(size_callback: Arc<AtomicBool>) -> Self {
-        Self {
-            editor_state: editor::default_state(),
-            fft_size: EnumParam::new("FFT Size", FFTSize::_1024).with_callback(Arc::new(
-                move |_| size_callback.store(true, Ordering::Release),
-            )),
-            analyzer_channel: EnumParam::new("Analyzer Channel", AnalyzerChannel::Merged),
-
-            sidechain_gain: FloatParam::new(
-                "Sidechaing Gain",
-                -60.0,
-                FloatRange::Skewed {
-                    min: utils::db_to_gain(-120.0),
-                    max: utils::db_to_gain(12.0),
-                    factor: 0.3,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-            .with_string_to_value(formatters::s2v_f32_gain_to_db())
-            .with_unit("dB"),
-
-            lowcut: FloatParam::new(
-                "LowCut",
-                50.0,
-                FloatRange::Skewed {
-                    min: 20.0,
-                    max: 20_000.0,
-                    factor: 0.3,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2))
-            .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
-
-            highcut: FloatParam::new(
-                "HighCut",
-                20_000.0,
-                FloatRange::Skewed {
-                    min: 20.0,
-                    max: 20_000.0,
-                    factor: 0.3,
-                },
-            )
-            .with_value_to_string(formatters::v2s_f32_hz_then_khz(2))
-            .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
-
-            stereo_link: BoolParam::new("Stereo Link", false),
-
-            test_param: FloatParam::new("Test", 0.0, FloatRange::Linear { min: 0.0, max: 1.0 })
-                .with_value_to_string(formatters::v2s_f32_rounded(2)),
-        }
-    }
-}
-
 impl Plugin for PluginData {
     const NAME: &'static str = "fft_adaptive_mixer";
     const VENDOR: &'static str = "";
@@ -152,13 +73,9 @@ impl Plugin for PluginData {
         main_input_channels: NonZeroU32::new(2),
         main_output_channels: NonZeroU32::new(2),
 
-        aux_input_ports: &[],
-        aux_output_ports: &[],
+        aux_input_ports: &[new_nonzero_u32(2)],
 
-        // Individual ports and the layout as a whole can be named here. By default these names
-        // are generated as needed. This layout will be called 'Stereo', while a layout with
-        // only one input and output channel would be called 'Mono'.
-        names: PortNames::const_default(),
+        ..AudioIOLayout::const_default()
     }];
 
     const MIDI_INPUT: MidiConfig = MidiConfig::None;
@@ -216,6 +133,12 @@ impl Plugin for PluginData {
     ) -> ProcessStatus {
         let an_chan = self.params.analyzer_channel.value();
         let fft_size = self.params.fft_size.value();
+        let smooth = self.params.smooth.value();
+        let side_gain = self.params.amount.value();
+        let lowcut = self.params.lowcut.value();
+        let highcut = self.params.highcut.value();
+        let gate = self.params.gate.value();
+
 
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
@@ -223,14 +146,22 @@ impl Plugin for PluginData {
             self.size_changed.store(false, Ordering::Relaxed);
         }
 
-        self.stereo_fft_processor.set_params(an_chan);
+        self.stereo_fft_processor.set_params(side_gain, lowcut, highcut, gate, smooth, an_chan);
 
-        for mut channel_samples in buffer.iter_samples() {
+        for (mut channel_samples, mut aux_channel_samples) in
+            buffer.iter_samples().zip(_aux.inputs[0].iter_samples())
+        {
             // Smoothing is optionally built into the parameters themselves
-            let output_samples = self.stereo_fft_processor.process_sample([
-                *channel_samples.get_mut(0).unwrap(),
-                *channel_samples.get_mut(1).unwrap(),
-            ]);
+            let output_samples = self.stereo_fft_processor.process_sample(
+                [
+                    *channel_samples.get_mut(0).unwrap(),
+                    *channel_samples.get_mut(1).unwrap(),
+                ],
+                [
+                    *aux_channel_samples.get_mut(0).unwrap(),
+                    *aux_channel_samples.get_mut(1).unwrap(),
+                ],
+            );
 
             *channel_samples.get_mut(0).unwrap() = output_samples[0];
             *channel_samples.get_mut(1).unwrap() = output_samples[1];

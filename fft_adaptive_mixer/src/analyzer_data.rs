@@ -11,6 +11,7 @@ pub enum AnalyzerChannel {
 pub struct AnalyzerData {
     pub num_bins: usize,
     pub magnitudes: Vec<f32>,
+    pub frequencies: Vec<f32>,
     pub reduction: Vec<f32>,
     pub lowcut: f32,
     pub highcut: f32,
@@ -21,8 +22,9 @@ impl AnalyzerData {
         Self {
             num_bins,
             magnitudes: vec![0.0f32; num_bins],
+            frequencies: vec![0.0f32; num_bins],
             reduction: vec![0.0f32; num_bins],
-            lowcut: 20.0f32,
+            lowcut: 50.0f32,
             highcut: 18_000.0f32,
         }
     }
