@@ -200,16 +200,10 @@ impl PluginParams {
                 .with_unit("dB"),
             amount: FloatParam::new(
                     "Amount",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed { 
-                        min: utils::db_to_gain(-48.0), 
-                        max: utils::db_to_gain(48.0), 
-                        factor: FloatRange::skew_factor(-2.0), 
-                        center: utils::db_to_gain(0.0) 
-                    }
-                ).with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
-                .with_unit("dB"),
+                    0.0,
+                    FloatRange::Linear { min: 0.0, max: 1.0 }
+                ).with_value_to_string(formatters::v2s_f32_percentage(2))
+                .with_string_to_value(formatters::s2v_f32_percentage()),
             gate: FloatParam::new(
                     "Gate",
                     0.0,

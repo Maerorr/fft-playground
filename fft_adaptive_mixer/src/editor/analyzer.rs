@@ -144,7 +144,7 @@ fn draw_spectrum(
         let x = freq_to_x(*f);
         
         let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
-
+        
         let height = db_to_height(*magnitude);
 
         bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (0.5 - height / 2.0)));
@@ -213,7 +213,8 @@ let bounds = cx.bounds();
         
         let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
 
-        let height = reduction_db_to_height(*reduction);
+        //let height = reduction_db_to_height(*reduction);
+        let height = db_to_height(*reduction);
 
         bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (0.5 + height / 2.0)));
         //bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
