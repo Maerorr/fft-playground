@@ -77,7 +77,7 @@ impl StereoFFTProcessor {
     pub fn set_params(&mut self, reduction_amount: f32, low: f32, high: f32, gate: f32, smooth: f32, an_chan: AnalyzerChannel) {
         self.analyzer_channel = an_chan;
         self.smooth = smooth;
-        self.fft_effect.set_params(reduction_amount, low, high, gate);
+        self.fft_effect.set_params(reduction_amount, low, high, gate, smooth);
     }
 
     pub fn set_sample_rate(&mut self, sr: usize) {
@@ -222,15 +222,15 @@ impl StereoFFTProcessor {
             // let db3 = -20.0;
             // let db4 = -30.0;
 
-            // self.data[channel].spectrum_mag[10] =  utils::db_to_gain(db1);
-            // self.data[channel].spectrum_mag[50] =  utils::db_to_gain(db2);
-            // self.data[channel].spectrum_mag[100] = utils::db_to_gain(db3);
-            // self.data[channel].spectrum_mag[200] = utils::db_to_gain(db4);
+            // self.aux_data[channel].spectrum_mag[10] =  utils::db_to_gain(db1);
+            // self.aux_data[channel].spectrum_mag[50] =  utils::db_to_gain(db2);
+            // self.aux_data[channel].spectrum_mag[100] = utils::db_to_gain(db3);
+            // self.aux_data[channel].spectrum_mag[200] = utils::db_to_gain(db4);
             
-            // self.data[channel].spectrum_db[10] =  db1;
-            // self.data[channel].spectrum_db[50] =  db2;
-            // self.data[channel].spectrum_db[100] = db3;
-            // self.data[channel].spectrum_db[200] = db4;
+            // self.aux_data[channel].spectrum_db[10] =  db1;
+            // self.aux_data[channel].spectrum_db[50] =  db2;
+            // self.aux_data[channel].spectrum_db[100] = db3;
+            // self.aux_data[channel].spectrum_db[200] = db4;
         }
     }
 

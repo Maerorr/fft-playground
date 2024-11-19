@@ -139,7 +139,6 @@ impl Plugin for PluginData {
         let highcut = self.params.highcut.value();
         let gate = self.params.gate.value();
 
-
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
             self.stereo_fft_processor.change_fft_size(fft_size as usize);

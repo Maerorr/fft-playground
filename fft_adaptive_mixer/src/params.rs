@@ -25,6 +25,9 @@ pub struct PluginParams {
     #[id = "smooth"]
     pub smooth: FloatParam,
 
+    #[id = "peakiness"]
+    pub peakiness: FloatParam,
+
     #[id = "eq1"]
     pub eq1: FloatParam,
 
@@ -200,16 +203,22 @@ impl PluginParams {
                 .with_unit("dB"),
             amount: FloatParam::new(
                     "Amount",
-                    0.0,
-                    FloatRange::Linear { min: 0.0, max: 1.0 }
-                ).with_value_to_string(formatters::v2s_f32_percentage(2))
-                .with_string_to_value(formatters::s2v_f32_percentage()),
+                    utils::db_to_gain(-40.0),
+                    FloatRange::Skewed {
+                        min: utils::db_to_gain(-80.0),
+                        max: utils::db_to_gain(0.0),
+                        factor: 0.6,
+                    },
+                )
+                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
+                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_unit("dB"),
             gate: FloatParam::new(
                     "Gate",
-                    0.0,
+                    utils::db_to_gain(-40.0),
                     FloatRange::Skewed { 
                         min: utils::db_to_gain(-80.0), 
-                        max: utils::db_to_gain(20.0), 
+                        max: utils::db_to_gain(0.0), 
                         factor: 0.3 
                     }
                 ).with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -218,7 +227,12 @@ impl PluginParams {
             smooth: FloatParam::new(
                 "Smooth",
                 0.0,
-                FloatRange::Linear { min: 0.0, max: 20.0 }
+                FloatRange::Linear { min: 0.0, max: 1.0 }
+            ),
+            peakiness: FloatParam::new(
+                "Peakiness",
+                0.0,
+                FloatRange::Linear { min: 0.0, max: 1.0 }
             )
         }
     }

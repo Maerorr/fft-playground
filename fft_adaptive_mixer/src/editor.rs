@@ -19,7 +19,7 @@ pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.tt
 pub const COMFORTAA: &str = "Comfortaa";
 
 const WIDTH: u32 = 1050;
-const HEIGHT: u32 = 525; 
+const HEIGHT: u32 = 545; 
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::new(|| (WIDTH, HEIGHT))
@@ -54,18 +54,19 @@ pub(crate) fn create(
                             EditorData::plugin_data, 
                             |params| &params.lowcut, 
                             false, 
-                            String::from("mid"),
+                            String::from("cut"),
                             true
-                        ).width(Pixels(100.0));
+                        ).width(Pixels(100.0))
+                        .left(Pixels(15.0));
                         ParamKnob::new(cx, 
                             EditorData::plugin_data, 
                             |params| &params.highcut, 
                             false, 
-                            String::from("mid"),
+                            String::from("cut"),
                             true
                         ).width(Pixels(100.0));
                     })
-                    .height(Pixels(130.0))
+                    .height(Pixels(100.0))
                     .width(Pixels(210.0));
 
                     ParamKnob::new(cx, 
@@ -74,9 +75,12 @@ pub(crate) fn create(
                         false, 
                         String::from("main"),
                         true
-                    ).width(Pixels(160.0))
-                    .left(Pixels(25.0))
-                    .height(Pixels(180.0));
+                    )
+                    .width(Pixels(120.0))
+                    .left(Stretch(1.0))
+                    .right(Stretch(1.0))
+                    .bottom(Pixels(-10.0))
+                    .height(Pixels(130.0));
 
                     HStack::new(cx, |cx| {
                         ParamKnob::new(cx, 
@@ -85,17 +89,37 @@ pub(crate) fn create(
                             false, 
                             String::from("mid"),
                             true
-                        ).width(Pixels(100.0));
+                        ).width(Pixels(65.0));
                         ParamKnob::new(cx, 
                             EditorData::plugin_data, 
                             |params| &params.smooth, 
                             false, 
                             String::from("mid"),
                             false
-                        ).width(Pixels(100.0));
+                        ).width(Pixels(65.0));
+                        ParamKnob::new(cx, 
+                            EditorData::plugin_data, 
+                            |params| &params.peakiness, 
+                            false, 
+                            String::from("mid"),
+                            false
+                        ).width(Pixels(65.0));
                     })
-                    .height(Pixels(120.0))
+                    .left(Pixels(5.0))
+                    .height(Pixels(70.0))
                     .width(Pixels(210.0));
+
+                    // HStack::new(cx, |cx| {
+                    //     ParamKnob::new(cx, 
+                    //         EditorData::plugin_data, 
+                    //         |params| &params.highcut, 
+                    //         false, 
+                    //         String::from("mid"),
+                    //         true
+                    //     ).width(Pixels(70.0));
+                    // })
+                    // .height(Pixels(70.0))
+                    // .width(Pixels(210.0));
                     
                     VStack::new(cx, |cx| {
                         ParamSlider::new(cx, EditorData::plugin_data, |params| &params.fft_size)
