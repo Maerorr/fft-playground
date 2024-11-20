@@ -151,7 +151,6 @@ impl Plugin for PluginData {
         for (mut channel_samples, mut aux_channel_samples) in
             buffer.iter_samples().zip(_aux.inputs[0].iter_samples())
         {
-            // Smoothing is optionally built into the parameters themselves
             let output_samples = self.stereo_fft_processor.process_sample(
                 [
                     *channel_samples.get_mut(0).unwrap(),

@@ -48,6 +48,20 @@ impl AdaptiveMixer {
         self.lpf.set_a(smooth);
     }   
 
+    pub fn get_max_withoun_cutoffs(&self, vec: &Vec<f32>, freq: &Vec<f32>) -> f32 {
+        let mut max = std::f32::MIN;
+
+        for (i, (el, f)) in vec.iter().zip(freq.iter()).enumerate() {
+            if *f < self.lowcut || *f > self.highcut {
+                continue;
+            }
+            if *el > max {
+                max = *el;
+            }
+        }
+        max
+    }
+
     pub fn process_spectrum(&mut self, 
         mag: [&Vec<f32>; 2], 
         phase: [&Vec<f32>; 2], 
@@ -59,10 +73,10 @@ impl AdaptiveMixer {
     {
         let one_over_p = 1.0f32 / self.peakiness;
         for channel in 0..2 {
-            let max = aux_mag[channel].iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap().max(utils::db_to_gain(-60.0));
+            let max = self.get_max_withoun_cutoffs(&aux_mag[channel], &freq[channel]).max(utils::db_to_gain(-60.0));//aux_mag[channel].iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap().max(utils::db_to_gain(-60.0));
 
-            for (smoothed, (aux_db, aux_mag)) in self.smoothed.iter_mut().zip(aux_db[channel].iter().zip(aux_mag[channel].iter())) {
-                *smoothed = if *aux_db > utils::gain_to_db(self.gate) {
+            for (i, (smoothed, (aux_db, aux_mag))) in self.smoothed.iter_mut().zip(aux_db[channel].iter().zip(aux_mag[channel].iter())).enumerate() {
+                *smoothed = if *aux_db > utils::gain_to_db(self.gate) || !(freq[channel][i] < self.lowcut || freq[channel][i] > self.highcut){
                     utils::calculate_peakness(*aux_mag / max, self.peakiness, one_over_p) * self.reduction_amount
                 } else {
                     0.0f32

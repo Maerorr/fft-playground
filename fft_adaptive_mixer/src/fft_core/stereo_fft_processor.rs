@@ -220,20 +220,20 @@ impl StereoFFTProcessor {
                 self.aux_data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
             }
 
-            let db1 = -5.0;
-            let db2 = -10.0;
-            let db3 = -20.0;
-            let db4 = -30.0;
+            // let db1 = -5.0;
+            // let db2 = -10.0;
+            // let db3 = -20.0;
+            // let db4 = -30.0;
 
-            self.aux_data[channel].spectrum_mag[45] =  utils::db_to_gain(db1);
-            self.aux_data[channel].spectrum_mag[50] =  utils::db_to_gain(db2);
-            self.aux_data[channel].spectrum_mag[55] = utils::db_to_gain(db3);
-            self.aux_data[channel].spectrum_mag[60] = utils::db_to_gain(db4);
+            // self.aux_data[channel].spectrum_mag[45] = utils::db_to_gain(db1);
+            // self.aux_data[channel].spectrum_mag[46] = utils::db_to_gain(db2);
+            // self.aux_data[channel].spectrum_mag[47] = utils::db_to_gain(db3);
+            // self.aux_data[channel].spectrum_mag[48] = utils::db_to_gain(db4);
             
-            self.aux_data[channel].spectrum_db[45] =  db1;
-            self.aux_data[channel].spectrum_db[50] =  db2;
-            self.aux_data[channel].spectrum_db[55] = db3;
-            self.aux_data[channel].spectrum_db[60] = db4;
+            // self.aux_data[channel].spectrum_db[45] = db1;
+            // self.aux_data[channel].spectrum_db[46] = db2;
+            // self.aux_data[channel].spectrum_db[47] = db3;
+            // self.aux_data[channel].spectrum_db[48] = db4;
         }
     }
 
