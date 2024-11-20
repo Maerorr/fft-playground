@@ -67,6 +67,16 @@ pub fn gauss(x: f32, sig: f32) -> f32 {
     (-0.5 * (x * x)/(sig_clamped * sig_clamped)).exp()
 }
 
+#[inline]
+pub fn calculate_peakness(x: f32, p: f32, one_over_p: f32) -> f32 {
+    //x.clamp(0.0, 1.0)//.powi(2)
+    (1.0f32 - (1.0f32 - x.clamp(0.0, 1.0)).powf(p)).powf(one_over_p)
+}
+
+#[inline]
+pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    (1.0f32 - t) * a + t * b
+}
 
 #[cfg(test)]
 mod tests {

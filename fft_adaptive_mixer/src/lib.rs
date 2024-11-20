@@ -138,6 +138,7 @@ impl Plugin for PluginData {
         let lowcut = self.params.lowcut.value();
         let highcut = self.params.highcut.value();
         let gate = self.params.gate.value();
+        let peakiness = self.params.peakiness.value();
 
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
@@ -145,7 +146,7 @@ impl Plugin for PluginData {
             self.size_changed.store(false, Ordering::Relaxed);
         }
 
-        self.stereo_fft_processor.set_params(side_gain, lowcut, highcut, gate, smooth, an_chan);
+        self.stereo_fft_processor.set_params(side_gain, lowcut, highcut, gate, smooth, peakiness, an_chan);
 
         for (mut channel_samples, mut aux_channel_samples) in
             buffer.iter_samples().zip(_aux.inputs[0].iter_samples())

@@ -4,16 +4,19 @@ use analyzer::Analyzer;
 use nih_plug::prelude::{util, AtomicF32, Editor, Vst3Plugin};
 use nih_plug_vizia::vizia::image::{Pixel, Pixels};
 use nih_plug_vizia::vizia::style::Color;
+use nih_plug_vizia::vizia::vg::Canvas;
 use nih_plug_vizia::vizia::{prelude::*, vg};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use param_knob::ParamKnob;
+use peak_curve::PeakCurve;
 
 use crate::analyzer_data::AnalyzerData;
 use crate::PluginParams;
 
 mod analyzer;
 mod param_knob;
+mod peak_curve;
 
 pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.ttf");
 pub const COMFORTAA: &str = "Comfortaa";
@@ -97,29 +100,39 @@ pub(crate) fn create(
                             String::from("mid"),
                             false
                         ).width(Pixels(65.0));
-                        ParamKnob::new(cx, 
-                            EditorData::plugin_data, 
-                            |params| &params.peakiness, 
-                            false, 
-                            String::from("mid"),
-                            false
-                        ).width(Pixels(65.0));
+
+                        VStack::new(cx, |cx| {
+                            PeakCurve::new(cx, EditorData::analyzer_data)
+                            .width(Pixels(20.0))
+                            .height(Pixels(20.0))
+                            .left(Pixels(20.0))
+                            .bottom(Pixels(-20.0));
+
+                            ParamKnob::new(cx, 
+                                EditorData::plugin_data, 
+                                |params| &params.peakiness, 
+                                false, 
+                                String::from("mid"),
+                                false
+                                )
+                                .width(Pixels(65.0))
+                                .height(Pixels(100.0))
+                                .bottom(Pixels(30.0));
+                        }).height(Pixels(100.0));
+                        
+                        
+                        // let bounds: BoundingBox = peak.bounds();
+                        // let mut peakiness_path = vg::Path::new();
+                        // peakiness_path.move_to(bounds.x, bounds.y);
+                        // peakiness_path.line_to(bounds.w, bounds.h);
+                        // let peak_paint = vg::Paint::color(vg::Color::rgb(230, 230, 250)).with_line_width(2.0);
+
                     })
                     .left(Pixels(5.0))
-                    .height(Pixels(70.0))
+                    .height(Pixels(100.0))
                     .width(Pixels(210.0));
 
-                    // HStack::new(cx, |cx| {
-                    //     ParamKnob::new(cx, 
-                    //         EditorData::plugin_data, 
-                    //         |params| &params.highcut, 
-                    //         false, 
-                    //         String::from("mid"),
-                    //         true
-                    //     ).width(Pixels(70.0));
-                    // })
-                    // .height(Pixels(70.0))
-                    // .width(Pixels(210.0));
+                    
                     
                     VStack::new(cx, |cx| {
                         ParamSlider::new(cx, EditorData::plugin_data, |params| &params.fft_size)

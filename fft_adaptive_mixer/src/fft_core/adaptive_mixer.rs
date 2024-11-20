@@ -13,6 +13,7 @@ pub struct AdaptiveMixer {
     pub smoothed: Vec<f32>,
     pub lpf: utils::SimpleLPF,
     pub smoothness: f32,
+    pub peakiness: f32,
 }
 
 impl AdaptiveMixer {
@@ -27,6 +28,7 @@ impl AdaptiveMixer {
             gate: -120.0,
             lpf: SimpleLPF::new(0.001f32),
             smoothness: 0.0f32,
+            peakiness: 1.0f32
         }
     }
 
@@ -36,12 +38,13 @@ impl AdaptiveMixer {
         self.smoothed.resize(new_bin_size, 0.0f32);
     }
 
-    pub fn set_params(&mut self, side_gain: f32, low: f32, high: f32, gate: f32, smooth: f32) {
+    pub fn set_params(&mut self, side_gain: f32, low: f32, high: f32, gate: f32, smooth: f32, peakiness: f32) {
         self.reduction_amount = side_gain;
         self.lowcut = low;
         self.highcut = high;
         self.gate = gate;
         self.smoothness = smooth;
+        self.peakiness = peakiness;
         self.lpf.set_a(smooth);
     }   
 
@@ -54,12 +57,13 @@ impl AdaptiveMixer {
         aux_mag: [&Vec<f32>; 2],
         output_buffer: &mut [Vec<Complex<f32>>; 2]) 
     {
+        let one_over_p = 1.0f32 / self.peakiness;
         for channel in 0..2 {
             let max = aux_mag[channel].iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap().max(utils::db_to_gain(-60.0));
 
             for (smoothed, (aux_db, aux_mag)) in self.smoothed.iter_mut().zip(aux_db[channel].iter().zip(aux_mag[channel].iter())) {
                 *smoothed = if *aux_db > utils::gain_to_db(self.gate) {
-                    calc_exp(*aux_mag / max) * self.reduction_amount
+                    utils::calculate_peakness(*aux_mag / max, self.peakiness, one_over_p) * self.reduction_amount
                 } else {
                     0.0f32
                 };
@@ -107,7 +111,3 @@ impl AdaptiveMixer {
     }
 }
 
-#[inline]
-pub fn calc_exp(x: f32) -> f32 {
-    x.clamp(0.0, 1.0)//.powi(2)
-}

@@ -231,8 +231,8 @@ impl PluginParams {
             ),
             peakiness: FloatParam::new(
                 "Peakiness",
-                0.0,
-                FloatRange::Linear { min: 0.0, max: 1.0 }
+                1.0,
+                FloatRange::Linear { min: 0.3, max: 5.0 }
             )
         }
     }
