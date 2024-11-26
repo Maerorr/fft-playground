@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 pub const MINUS_INF_DB: f32 = -100f32;
 pub const MINUS_INF_GAIN: f32 = 1e-5;
 
@@ -55,22 +53,29 @@ pub fn db_to_gain(x: f32) -> f32 {
     }
 }
 
+pub fn freq_to_bin(f: f32, fft_size: usize, sample_rate: f32) -> usize {
+    ((f * fft_size as f32) / sample_rate).floor() as usize
+}
+
 #[inline]
 pub fn fft_size_to_bins(size: usize) -> usize {
     (size / 2) + 1
-} 
-
-#[inline]
-pub fn gauss(x: f32, sig: f32) -> f32 {
-    let sig_clamped = sig.max(0.001f32);
-    (1.0 / (sig_clamped * (2.0 * PI).sqrt())) *
-    (-0.5 * (x * x)/(sig_clamped * sig_clamped)).exp()
 }
 
 #[inline]
 pub fn calculate_peakness(x: f32, p: f32, one_over_p: f32) -> f32 {
     //x.clamp(0.0, 1.0)//.powi(2)
     (1.0f32 - (1.0f32 - x.clamp(0.0, 1.0)).powf(p)).powf(one_over_p)
+}
+
+#[inline]
+pub fn peakiness_scaled(x: f32, p: f32, one_over_p: f32, min_x: f32, max_x: f32, min_y: f32, height: f32) -> f32 {
+    (1.0f32 - 
+        (
+            1.0f32 - ((x.clamp(min_x, max_x) - min_x) / max_x)
+        )
+        .powf(p)
+    ).powf(one_over_p) * height + min_y
 }
 
 #[inline]
@@ -102,13 +107,5 @@ mod tests {
         multiply_vectors_in_place(&mut a, &b);
 
         assert_eq!(expected, a);
-    }
-
-    #[test]
-    fn gauss_test() {
-        let expected = 1.9947f32;
-        let val = gauss(0.0, 0.2f32);
-        print!("expected: {}, value: {}", expected, val);
-        assert!((val - expected).abs() < 0.001);
     }
 }

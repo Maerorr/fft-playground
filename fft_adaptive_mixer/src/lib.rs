@@ -139,6 +139,14 @@ impl Plugin for PluginData {
         let highcut = self.params.highcut.value();
         let gate = self.params.gate.value();
         let peakiness = self.params.peakiness.value();
+        let eq1 = self.params.eq1.value();
+        let eq2 = self.params.eq2.value();
+        let eq3 = self.params.eq3.value();
+        let eq4 = self.params.eq4.value();
+        let eq5 = self.params.eq5.value();
+        let eq6 = self.params.eq6.value();
+        let eq7 = self.params.eq7.value();
+        let eq8 = self.params.eq8.value();
 
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
@@ -146,7 +154,23 @@ impl Plugin for PluginData {
             self.size_changed.store(false, Ordering::Relaxed);
         }
 
-        self.stereo_fft_processor.set_params(side_gain, lowcut, highcut, gate, smooth, peakiness, an_chan);
+        self.stereo_fft_processor.set_params(
+                side_gain,
+                lowcut, 
+                highcut,
+                gate, 
+                smooth, 
+                peakiness, 
+                eq1,
+                eq2,
+                eq3,
+                eq4,
+                eq5,
+                eq6,
+                eq7,
+                eq8,
+                an_chan
+            );
 
         for (mut channel_samples, mut aux_channel_samples) in
             buffer.iter_samples().zip(_aux.inputs[0].iter_samples())

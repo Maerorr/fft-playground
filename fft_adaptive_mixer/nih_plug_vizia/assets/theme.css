@@ -50,23 +50,23 @@ scrollview scrollbar .thumb:hover {
 }
 
 .eq-param-knob-whole {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 100px;
 }
 
 .eq-param-knob {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 100px;
 }
 
 .main-param-knob-whole {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
 }
 
 .main-param-knob {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
 }
 
 .mid-param-knob-whole {
@@ -103,8 +103,24 @@ knob {
   height: 60px;
 }
 
-knob .track {
-  background-color: #d9dbff;
+knob .cut-track {
+  background-color: #48475d;
+  color: #db3ffd;
+}
+
+knob .main-track {
+  background-color: #48475d;
+  color: #7a09fa;
+}
+
+knob .mid-track {
+  background-color: #48475d;
+  color: #0c0293;
+}
+
+knob .eq-track {
+  background-color: #48475d;
+  color: #99e65f;
 }
 
 .param-label {
@@ -117,10 +133,22 @@ knob .track {
   font-size: 12;
 }
 
-.tick {
-  background-color: #d9dbff;
+.cut-tick {
+  background-color: #8b8aa6;
+}
+
+.main-tick {
+  background-color: #8b8aa6;
+}
+
+.mid-tick {
+  background-color: #8b8aa6;
+}
+
+.eq-tick {
+  background-color: #8b8aa6;
 }
 
 .main-gui {
-  background-color: #1E1D1D;
+  background-color: #1b1b1b;
 }

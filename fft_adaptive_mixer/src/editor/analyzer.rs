@@ -3,26 +3,15 @@ use std::sync::{Arc, Mutex};
 use nih_plug::{nih_debug_assert, nih_log, prelude::AtomicF32};
 use nih_plug_vizia::vizia::{image::Pixel, prelude::*, vg};
 use std::sync::atomic::Ordering;
-
 use crate::analyzer_data::{self, AnalyzerData};
 
-const LN_FREQ_RANGE_START_HZ: f32 = 3.1011974; // 30.0f32.ln();
-const LN_FREQ_RANGE_END_HZ: f32 = 10.07; // 22_000.0f32.ln();
-const LN_FREQ_RANGE: f32 = LN_FREQ_RANGE_END_HZ - LN_FREQ_RANGE_START_HZ;
+use super::EQ_FREQS;
 
 const MIN_F: f32 = 20.0f32;
 const MAX_F: f32 = 20_000.0f32;
 
 const MIN_F_LN: f32 = 2.995732; // ln(20.0)
 const MAX_F_LN: f32 = 9.9034f32;// ln(20_000.0)
-
-const MIN_F_LOG2: f32 = 4.32192; // ln(20.0)
-const MAX_F_LOG2: f32 = 14.28771f32;// ln(20_000.0)
-
-const MIN_F_LOG10: f32 = 1.30102f32;
-const MAX_F_LOG10: f32 = 4.30102f32;
-
-const REF_FREQ: f32 = 90.0f32;
 
 #[derive(Debug, Clone)]
 pub struct Analyzer {
@@ -71,6 +60,7 @@ impl View for Analyzer {
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
         draw_reduction(cx, canvas, analyzer_data, nyquist, sr);
         draw_cutoffs(cx, canvas, analyzer_data, nyquist, sr);
+        draw_eq(cx, canvas, analyzer_data);
 
         // draw border
         let border_width = cx.border_width();
@@ -89,7 +79,8 @@ impl View for Analyzer {
             path.close();
         }
 
-        let paint = vg::Paint::color(border_color).with_line_width(border_width);
+        let paint = vg::Paint::color(border_color)
+        .with_line_width(border_width);
         canvas.stroke_path(&path, &paint);
     }
 }
@@ -100,8 +91,13 @@ fn db_to_height(db_value: f32) -> f32 {
 }
 
 #[inline]
+fn eq_db_to_height(db_value: f32) -> f32 {
+    (db_value / 30.0).clamp(-1.0f32, 1.0f32)
+}
+
+#[inline]
 fn reduction_db_to_height(db_value: f32) -> f32 {
-    ((-db_value) / 80.0).clamp(0.0f32, 1.0f32)
+    ((db_value) / 80.0).clamp(0.0f32, 1.0f32)
 }
 
 #[inline]
@@ -155,7 +151,7 @@ fn draw_spectrum(
     bars_path.line_to(bounds.x + bounds.w, bounds.y + bounds.h * 0.5);
     bars_path.close();
 
-    let bars_paint = vg::Paint::color(vg::Color::rgb(230, 230, 250)).with_line_width(0.0);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(199, 207, 221)).with_line_width(0.0);
     canvas.fill_path(&bars_path, &bars_paint);
 
     //let outline_paint = vg::Paint::color(vg::Color::rgb(230, 50, 253)).with_line_width(2.0);
@@ -214,7 +210,7 @@ let bounds = cx.bounds();
         let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
 
         //let height = reduction_db_to_height(*reduction);
-        let height = db_to_height(*reduction);
+        let height = reduction_db_to_height(*reduction);
 
         bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (0.5 + height / 2.0)));
         //bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
@@ -223,7 +219,7 @@ let bounds = cx.bounds();
     bars_path.line_to(bounds.x + bounds.w, bounds.y + bounds.h * 0.5);
     bars_path.close();
 
-    let bars_paint = vg::Paint::color(vg::Color::rgb(35, 130, 250)).with_line_width(0.0);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(122, 9, 250)).with_line_width(0.0);
     canvas.fill_path(&bars_path, &bars_paint);
 }
 
@@ -244,7 +240,7 @@ pub fn draw_cutoffs(
         (bounds.x + (bounds.w * freq_to_x(analyzer_data.lowcut)) + border_width) * 0.99f32;
     bars_path.move_to(lowcut_x, bounds.y + (bounds.h));
     bars_path.line_to(lowcut_x, bounds.y);
-    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 200, 25)).with_line_width(1.0);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(219, 63, 253)).with_line_width(1.0);
     canvas.stroke_path(&bars_path, &bars_paint);
 
     let mut bars_path = vg::Path::new();
@@ -252,6 +248,36 @@ pub fn draw_cutoffs(
         (bounds.x + (bounds.w * freq_to_x(analyzer_data.highcut)) + border_width) * 0.99f32;
     bars_path.move_to(highcut_x, bounds.y + (bounds.h));
     bars_path.line_to(highcut_x, bounds.y);
-    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 200, 25)).with_line_width(1.0);
+    let bars_paint = vg::Paint::color(vg::Color::rgb(219, 63, 253)).with_line_width(1.0);
     canvas.stroke_path(&bars_path, &bars_paint);
+}
+
+pub fn draw_eq(
+    cx: &mut DrawContext,
+    canvas: &mut Canvas,
+    analyzer_data: &AnalyzerData,
+) {
+    let bounds = cx.bounds();
+    let border_width = cx.border_width();
+
+    let mut path = vg::Path::new();
+    path.move_to(bounds.x + border_width / 2.0, bounds.y + bounds.h / 2.0);
+
+    for (i, gain) in analyzer_data.eq.iter().enumerate() {
+        path.line_to(
+            bounds.x + border_width + (bounds.w * freq_to_x(EQ_FREQS[i])), 
+            bounds.y + (bounds.h * (0.5 - eq_db_to_height(*gain) / 2.0))
+        );
+        path.line_to(
+            bounds.x + border_width + (bounds.w * freq_to_x(EQ_FREQS[i + 1])), 
+            bounds.y + (bounds.h * (0.5 - eq_db_to_height(*gain) / 2.0))
+        );
+        path.line_to(
+            bounds.x + border_width + (bounds.w * freq_to_x(EQ_FREQS[i + 1])), 
+            bounds.y + (bounds.h * (0.5 - eq_db_to_height(*gain) / 2.0))
+        );
+        
+    }
+    let bars_paint = vg::Paint::color(vg::Color::rgb(153, 230, 95)).with_line_width(1.0);
+    canvas.stroke_path(&path, &bars_paint);
 }

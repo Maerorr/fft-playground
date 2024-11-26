@@ -1,6 +1,6 @@
 use std::sync::{atomic::AtomicBool, Arc};
 
-use nih_plug::{nih_log, util};
+use nih_plug::{nih_log, util::{self, gain_to_db}};
 use rand::Rng;
 use realfft::{num_complex::{Complex, Complex32}, num_traits::Zero};
 
@@ -32,6 +32,7 @@ pub struct StereoFFTProcessor {
 
     smooth: f32,
     peakiness: f32,
+    eq: Vec<f32>,
 
     pub fft_effect: AdaptiveMixer,
 }
@@ -71,16 +72,56 @@ impl StereoFFTProcessor {
             size_changed,
             smooth: 0.0,
             peakiness: 1.0f32,
+            eq: vec![0.0f32; 8],
 
-            fft_effect: AdaptiveMixer::new(fft_size_to_bins(fft_size)),
+            fft_effect: AdaptiveMixer::new(fft_size_to_bins(fft_size), sample_rate as f32),
         }
     }
 
-    pub fn set_params(&mut self, reduction_amount: f32, low: f32, high: f32, gate: f32, smooth: f32, peakiness: f32, an_chan: AnalyzerChannel) {
+    pub fn set_params(&mut self, 
+        reduction_amount: f32, 
+        low: f32, 
+        high: f32, 
+        gate: f32, 
+        smooth: f32, 
+        peakiness: f32,
+        eq1: f32,
+        eq2: f32,
+        eq3: f32,
+        eq4: f32,
+        eq5: f32,
+        eq6: f32,
+        eq7: f32,
+        eq8: f32,
+        an_chan: AnalyzerChannel) 
+    {
         self.analyzer_channel = an_chan;
         self.smooth = smooth;
         self.peakiness = peakiness;
-        self.fft_effect.set_params(reduction_amount, low, high, gate, smooth, peakiness);
+        self.fft_effect.set_params(
+            reduction_amount, 
+            low, 
+            high,
+            gate, 
+            smooth,
+            peakiness,
+            eq1,
+            eq2,
+            eq3,
+            eq4,
+            eq5,
+            eq6,
+            eq7,
+            eq8,
+        );
+        self.eq[0] = eq1;
+        self.eq[1] = eq2;
+        self.eq[2] = eq3;
+        self.eq[3] = eq4;
+        self.eq[4] = eq5;
+        self.eq[5] = eq6;
+        self.eq[6] = eq7;
+        self.eq[7] = eq8;
     }
 
     pub fn set_sample_rate(&mut self, sr: usize) {
@@ -220,20 +261,20 @@ impl StereoFFTProcessor {
                 self.aux_data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
             }
 
-            // let db1 = -5.0;
-            // let db2 = -10.0;
-            // let db3 = -20.0;
-            // let db4 = -30.0;
+            let db1 = -5.0;
+            let db2 = -10.0;
+            let db3 = -40.0;
+            let db4 = -20.0;
 
-            // self.aux_data[channel].spectrum_mag[45] = utils::db_to_gain(db1);
-            // self.aux_data[channel].spectrum_mag[46] = utils::db_to_gain(db2);
-            // self.aux_data[channel].spectrum_mag[47] = utils::db_to_gain(db3);
-            // self.aux_data[channel].spectrum_mag[48] = utils::db_to_gain(db4);
+            self.aux_data[channel].spectrum_mag[10] = utils::db_to_gain(db1);
+            self.aux_data[channel].spectrum_mag[11] = utils::db_to_gain(db2);
+            self.aux_data[channel].spectrum_mag[12] = utils::db_to_gain(db3);
+            self.aux_data[channel].spectrum_mag[50] = utils::db_to_gain(db4);
             
-            // self.aux_data[channel].spectrum_db[45] = db1;
-            // self.aux_data[channel].spectrum_db[46] = db2;
-            // self.aux_data[channel].spectrum_db[47] = db3;
-            // self.aux_data[channel].spectrum_db[48] = db4;
+            self.aux_data[channel].spectrum_db[10] = db1;
+            self.aux_data[channel].spectrum_db[11] = db2;
+            self.aux_data[channel].spectrum_db[12] = db3;
+            self.aux_data[channel].spectrum_db[50] = db4;
         }
     }
 
@@ -273,6 +314,11 @@ impl StereoFFTProcessor {
         analyzer_input.reduction.fill(0.0f32);
         analyzer_input.num_bins = utils::fft_size_to_bins(self.fft_size);
         analyzer_input.p = self.peakiness;
+
+        for (i, eq) in self.eq.iter().enumerate() {
+            analyzer_input.eq[i] = *eq;
+        }
+
         for (i, mag) in analyzer_input.magnitudes[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
             *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
         }

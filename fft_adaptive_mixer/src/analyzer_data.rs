@@ -16,6 +16,7 @@ pub struct AnalyzerData {
     pub lowcut: f32,
     pub highcut: f32,
     pub p: f32,
+    pub eq: Vec<f32>,
 }
 
 impl AnalyzerData {
@@ -28,6 +29,7 @@ impl AnalyzerData {
             lowcut: 50.0f32,
             highcut: 18_000.0f32,
             p: 1.0f32,
+            eq: vec![0.0f32; 8],
         }
     }
 }

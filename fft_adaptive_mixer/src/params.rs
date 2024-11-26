@@ -99,119 +99,93 @@ impl PluginParams {
 
             eq1: FloatParam::new(
                     "Eq1",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                    0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq2: FloatParam::new(
                     "Eq2",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                    0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq3: FloatParam::new(
                     "Eq3",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                    0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq4: FloatParam::new(
                     "Eq4",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                    0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq5: FloatParam::new(
                     "Eq5",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                    0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq6: FloatParam::new(
                     "Eq6",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                   0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq7: FloatParam::new(
                     "Eq7",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             eq8: FloatParam::new(
                     "Eq8",
-                    utils::db_to_gain(0.0),
-                    FloatRange::SymmetricalSkewed {
-                        min: utils::db_to_gain(-36.0),
-                        max: utils::db_to_gain(36.0),
-                        factor: 0.3,
-                        center: utils::db_to_gain(0.0),
+                0.0,
+                    FloatRange::Linear {
+                        min: -24.0,
+                        max: 24.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             amount: FloatParam::new(
                     "Amount",
-                    utils::db_to_gain(-40.0),
-                    FloatRange::Skewed {
-                        min: utils::db_to_gain(-80.0),
-                        max: utils::db_to_gain(0.0),
-                        factor: 0.6,
+                    0.0,
+                    FloatRange::Linear {
+                        min: -80.0,
+                        max: 80.0,
                     },
                 )
-                .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
-                .with_string_to_value(formatters::s2v_f32_gain_to_db())
+                .with_value_to_string(formatters::v2s_f32_rounded(2))
                 .with_unit("dB"),
             gate: FloatParam::new(
                     "Gate",
@@ -232,7 +206,7 @@ impl PluginParams {
             peakiness: FloatParam::new(
                 "Peakiness",
                 1.0,
-                FloatRange::Linear { min: 0.3, max: 5.0 }
+                FloatRange::Linear { min: 0.3, max: 3.0 }
             )
         }
     }

@@ -30,6 +30,7 @@ impl ParamKnob {
         P: Param + 'static,
         FMap: Fn(&Params) -> &P + Copy + 'static,
     {
+        let prefix = css_prefix.clone();
         Self {
             param_base: ParamWidgetBase::new(cx, params.clone(), params_to_param),
         }
@@ -74,7 +75,7 @@ impl ParamKnob {
                                 KnobMode::Continuous,
                             )
                             .value(lens.clone())
-                            .class("tick");
+                            .class(format!("{}-tick", prefix).as_str());
                             ArcTrack::new(
                                 cx,
                                 centered,
@@ -85,7 +86,7 @@ impl ParamKnob {
                                 KnobMode::Continuous,
                             )
                             .value(lens)
-                            .class("track")
+                            .class(format!("{}-track", prefix).as_str())
                         },
                     )
                     .left(Stretch(1.0))
@@ -101,7 +102,7 @@ impl ParamKnob {
                     .on_mouse_up(move |cx, _button| {
                         cx.emit(ParamEvent::EndSetParam);
                     })
-                    .class(format!("{}-param-knob", css_prefix).as_str());
+                    .class(format!("{}-param-knob", css_prefix.clone()).as_str());
                     //.background_color(Color::yellow());
 
                     Label::new(
@@ -114,7 +115,7 @@ impl ParamKnob {
                     .bottom(Percentage(10.0));
                 })
                 //.background_color(Color::rgb(50, 50, 50))
-                .class(format!("{}-param-knob-whole", css_prefix).as_str());
+                .class(format!("{}-param-knob-whole", css_prefix.clone()).as_str());
             }),
         )
     }

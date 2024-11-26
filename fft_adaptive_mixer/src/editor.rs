@@ -20,9 +20,13 @@ mod peak_curve;
 
 pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.ttf");
 pub const COMFORTAA: &str = "Comfortaa";
+pub const EQ_FREQS: [f32; 9] = [20.0, 189.32, 368.40, 716.87, 1394.95, 2714.41, 5281.95, 10278.08, 20000.0]; 
 
 const WIDTH: u32 = 1050;
 const HEIGHT: u32 = 545; 
+
+const PANEL_COLOR: Color = Color::rgb(36, 35, 43);
+const SPECTRUM_BORDER_COLOR: Color = Color::rgb(72, 71, 93);
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::new(|| (WIDTH, HEIGHT))
@@ -79,11 +83,11 @@ pub(crate) fn create(
                         String::from("main"),
                         true
                     )
-                    .width(Pixels(120.0))
+                    .width(Pixels(140.0))
                     .left(Stretch(1.0))
                     .right(Stretch(1.0))
                     .bottom(Pixels(-10.0))
-                    .height(Pixels(130.0));
+                    .height(Pixels(150.0));
 
                     HStack::new(cx, |cx| {
                         ParamKnob::new(cx, 
@@ -119,14 +123,6 @@ pub(crate) fn create(
                                 .height(Pixels(100.0))
                                 .bottom(Pixels(30.0));
                         }).height(Pixels(100.0));
-                        
-                        
-                        // let bounds: BoundingBox = peak.bounds();
-                        // let mut peakiness_path = vg::Path::new();
-                        // peakiness_path.move_to(bounds.x, bounds.y);
-                        // peakiness_path.line_to(bounds.w, bounds.h);
-                        // let peak_paint = vg::Paint::color(vg::Color::rgb(230, 230, 250)).with_line_width(2.0);
-
                     })
                     .left(Pixels(5.0))
                     .height(Pixels(100.0))
@@ -181,7 +177,7 @@ pub(crate) fn create(
                 .child_right(Stretch(1.0))
                 .width(Pixels(200.0))
                 .height(Pixels(HEIGHT as f32))
-                .background_color(Color::gray());
+                .background_color(PANEL_COLOR);
 
                 // ANALYZER + EQ
                 VStack::new(cx, |cx| {
@@ -189,127 +185,163 @@ pub(crate) fn create(
                         .left(Stretch(1.0))
                         .right(Stretch(1.0))
                         .width(Pixels(850.0))
-                        .height(Pixels(400.0));
+                        .height(Pixels(400.0))
+                        .border_color(SPECTRUM_BORDER_COLOR)
+                        .border_width(Pixels(4.0));
 
+                    let mut i = 0;
                     // Spectrum params go here:
                     HStack::new(cx, |cx| {
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(37.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq1,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
-                        
+                        })
+                        .left(Pixels(105.0))
+                        .width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(35.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq2,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
                             .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq3,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
                             .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq4,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(28.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq5,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(27.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq6,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(26.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq7,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+                        i+=1;
                         VStack::new(cx, |cx| {
-                            Label::new(cx, "200, 1.3k")
-                            .height(Pixels(15.0))
-                            .left(Pixels(32.0))
-                            .right(Stretch(1.0));
+                            Label::new(cx, format!("({}, {})", EQ_FREQS[i].floor(), EQ_FREQS[i+1].floor()).as_str())
+                            .top(Pixels(5.0))
+                            .height(Pixels(25.0))
+                            .left(Pixels(24.0))
+                            .right(Stretch(1.0))
+                            .font_size(10.0);
                             ParamKnob::new(
                                 cx,
                                 EditorData::plugin_data,
                                 |params| &params.eq8,
-                                true,
+                                false,
                                 String::from("eq"),
-                                false
+                                true
                             ).left(Pixels(20.0));
-                        });
+                        }).width(Pixels(70.0))
+                        .height(Pixels(120.0));
+
                     })
                     .width(Pixels(850.0))
                     .height(Pixels(HEIGHT as f32 - 400.0))
-                    .background_color(Color::gray());
+                    .background_color(PANEL_COLOR);
                 })
                 .row_between(Pixels(0.0))
                 .child_left(Stretch(1.0))
