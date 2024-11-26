@@ -185,41 +185,14 @@ impl AdaptiveMixer {
                 *red = self.lpf.process(*red);
             }
 
-            nih_log!("red[50] {}, red[51] {}, red[52] {}, red[53] {},", self.reduction[50], self.reduction[51], self.reduction[52], self.reduction[53]);
-
-            for (i, (mag, db)) in mag[channel].iter().zip(db[channel]).enumerate() {
+            for (i, db) in db[channel].iter().enumerate() {
                 if freq[channel][i] < self.lowcut || freq[channel][i] > self.highcut {
                     output_buffer[channel][i] = Complex::from_polar(utils::db_to_gain(*db), phase[channel][i]);
                     self.reduction[i] = 0.0f32;
                     continue;
                 } 
-                let out_mag: f32;
-                //let mut peaked_db = self.db_eq[i] + self.peaked[i]; // peaked db, highest peak is unchanged, everything below is either quieten or brought up
-                // if (i == 10) {
-                //     nih_log!("aux_db[channel][10] {} + self.peaked[10] {} = {}, GATE: {}", aux_db[channel][i], self.peaked[i], peaked_db, self.gate);
-                // }
-                // if peaked_db < utils::gain_to_db(self.gate) {
-                //     peaked_db = -120.0; // mute if below gate
-                // } else {
-                //     peaked_db += self.reduction_amount; // if above gate, apply db of gain parameter
-                // }
 
-                // if (i == 10) {
-                //     nih_log!("aux_db[channel][10] {} + self.peaked[10] {} = {}", aux_db[channel][i], self.peaked[i], peaked_db);
-                // }
-                // let reduction = if peaked_db > -20.0 {
-                //     peaked_db + 20.0
-                // } else {
-                //     0.0f32
-                // };
-                //self.reduction[i] = reduction;
-                //nih_log!("reduction at {} -> {}", i, reduction);
-                // if reduction > 0.0 {
-                //     nih_log!("{}: db {} - reducion {} -> {}",i, db, reduction, db - reduction);
-                // }
-                out_mag = utils::db_to_gain(db - self.reduction[i]);
-
-                output_buffer[channel][i] = Complex::from_polar(out_mag, phase[channel][i]);
+                output_buffer[channel][i] = Complex::from_polar(utils::db_to_gain(db - self.reduction[i]), phase[channel][i]);
             }
             output_buffer[channel][0] = Complex::zero();
             output_buffer[channel][aux_db[0].len() - 1] = Complex::zero();
