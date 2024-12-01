@@ -2,6 +2,7 @@ pub const MINUS_INF_DB: f32 = -100f32;
 pub const MINUS_INF_GAIN: f32 = 1e-5;
 
 // https://www.musicdsp.org/en/latest/Filters/257-1-pole-lpf-for-smooth-parameter-changes.html
+#[derive(Clone, Copy)]
 pub struct SimpleLPF {
     pub a: f32,
     b: f32,

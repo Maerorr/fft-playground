@@ -338,6 +338,13 @@ pub(crate) fn create(
                         }).width(Pixels(70.0))
                         .height(Pixels(120.0));
 
+                        ParamKnob::new(cx,
+                            EditorData::plugin_data,
+                            |params| &params.time,
+                            false,
+                            String::from("eq"),
+                            true);
+
                     })
                     .width(Pixels(850.0))
                     .height(Pixels(HEIGHT as f32 - 400.0))

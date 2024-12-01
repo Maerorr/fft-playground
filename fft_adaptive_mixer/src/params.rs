@@ -28,6 +28,9 @@ pub struct PluginParams {
     #[id = "peakiness"]
     pub peakiness: FloatParam,
 
+    #[id = "time"]
+    pub time: FloatParam,
+
     #[id = "eq1"]
     pub eq1: FloatParam,
 
@@ -207,6 +210,15 @@ impl PluginParams {
                 "Peakiness",
                 1.0,
                 FloatRange::Linear { min: 0.3, max: 3.0 }
+            ),
+            time: FloatParam::new(
+                "Time",
+                0.5,
+                FloatRange::Skewed { 
+                    min: 0.0,
+                    max: 1.0, 
+                    factor: FloatRange::skew_factor(5.0),
+                }
             )
         }
     }

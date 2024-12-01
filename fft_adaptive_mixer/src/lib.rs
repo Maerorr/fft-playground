@@ -139,6 +139,8 @@ impl Plugin for PluginData {
         let highcut = self.params.highcut.value();
         let gate = self.params.gate.value();
         let peakiness = self.params.peakiness.value();
+        let time = self.params.time.value();
+
         let eq1 = self.params.eq1.value();
         let eq2 = self.params.eq2.value();
         let eq3 = self.params.eq3.value();
@@ -161,6 +163,7 @@ impl Plugin for PluginData {
                 gate, 
                 smooth, 
                 peakiness, 
+                time,
                 eq1,
                 eq2,
                 eq3,

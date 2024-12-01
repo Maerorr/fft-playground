@@ -23,6 +23,8 @@ pub struct AdaptiveMixer {
 
     pub fft_size: usize,
     pub sample_rate: f32,
+
+    pub time_lpf: [SimpleLPF; 4096],
 }
 
 impl AdaptiveMixer {
@@ -45,6 +47,7 @@ impl AdaptiveMixer {
 
             fft_size: num_bins * 2,
             sample_rate: sr,
+            time_lpf: [SimpleLPF::new(0.0); 4096],
         }
     }
 
@@ -62,6 +65,7 @@ impl AdaptiveMixer {
         gate: f32, 
         smooth: f32, 
         peakiness: f32,
+        time: f32,
         eq1: f32,
         eq2: f32,
         eq3: f32,
@@ -78,6 +82,11 @@ impl AdaptiveMixer {
         self.smoothness = smooth;
         self.peakiness = peakiness;
         self.lpf.set_a(smooth);
+        if self.time_lpf[0].a != time {
+            for time_smooth in self.time_lpf.iter_mut() {
+                time_smooth.set_a(time);
+            }
+        }
         self.eq[0] = eq1;
         self.eq[1] = eq2;
         self.eq[2] = eq3;
@@ -126,14 +135,11 @@ impl AdaptiveMixer {
                     self.db_eq[o] = aux_db[channel][o] + *eq;
                 }
             }
-            //nih_log!("db[50] after eq {}", self.db_eq[50]);
             // Fill the rest of the buffer with bands eq'd with the last high shelf
             for i in utils::freq_to_bin(EQ_FREQS[8], self.fft_size, self.sample_rate)..(aux_mag[channel].len() - 1) {
                 //self.mags_eq[i] = aux_mag[channel][i] * self.eq[7];
                 self.db_eq[i] = aux_db[channel][i] + self.eq[7];
             }
-            // calculate max value from the side signal to normalize it later on
-            //let max = self.get_max_within_cutoffs(&self.db_eq, &freq[channel]).max(utils::db_to_gain(-60.0));
 
             // rescale into 0-1
             for (i, db) in self.peaked.iter_mut().enumerate() {
@@ -141,27 +147,21 @@ impl AdaptiveMixer {
             }
             //nih_log!("db[100] after 0-1 scaling {}", self.peaked[100]);
             let max = self.get_max_within_cutoffs(&self.peaked, &freq[channel]).max(-90.0);
-            //nih_log!("max: {}", max* 100.0 - 100.0);
             // normalize the 0-1 so that the highest peak is equal to 1.0
             for (i, db) in self.peaked.iter_mut().enumerate() {
                 *db = *db / max;
             }
-           // nih_log!("db[10] after normalizing 0-1 scaling scaling {}", self.peaked[10]);
+
             // rescale back to db values -> highest peak is now 0.0, lowest possible is -100
             for (i, db) in self.peaked.iter_mut().enumerate() {
                 *db = *db * 100.0 - 100.0;
             }
-
-            //nih_log!("db[50] after rescaling back to db {}", self.peaked[50]);
 
             // calculate diff between nonpeaked and peaked
             // smoothed now becomes dB DIFFERENCE of peaked and non-peaked
             for (i, peaked) in self.peaked.iter_mut().enumerate() {
                 *peaked = utils::peakiness_scaled(*peaked, self.peakiness, one_over_p, -100.0, 100.0, -100.0, 100.0) - *peaked;
             }
-            //nih_log!("db[50] after peakiness {}", self.peaked[50]);
-            //nih_log!("db[50] final db value {}", aux_db[channel][50] + self.peaked[50]);
-            // }
             
             for (i, peaked) in self.peaked.iter_mut().enumerate() {
                 *peaked = self.db_eq[i] + *peaked;
@@ -188,10 +188,10 @@ impl AdaptiveMixer {
             for (i, db) in db[channel].iter().enumerate() {
                 if freq[channel][i] < self.lowcut || freq[channel][i] > self.highcut {
                     output_buffer[channel][i] = Complex::from_polar(utils::db_to_gain(*db), phase[channel][i]);
-                    self.reduction[i] = 0.0f32;
+                    self.reduction[i] = self.time_lpf[i].process(0.0f32);
                     continue;
                 } 
-
+                self.reduction[i] = self.time_lpf[i].process(self.reduction[i]);
                 output_buffer[channel][i] = Complex::from_polar(utils::db_to_gain(db - self.reduction[i]), phase[channel][i]);
             }
             output_buffer[channel][0] = Complex::zero();
