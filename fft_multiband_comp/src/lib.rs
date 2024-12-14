@@ -17,8 +17,8 @@ use util::db_to_gain;
 mod analyzer_data;
 mod editor;
 mod fft_core;
-mod utils;
 mod params;
+mod utils;
 
 // const FFT_SIZE: usize = 1024;
 // const FFT_SIZE_F32: f32 = FFT_SIZE as f32;
@@ -60,7 +60,7 @@ impl Default for PluginData {
 }
 
 impl Plugin for PluginData {
-    const NAME: &'static str = "fft_adaptive_mixer";
+    const NAME: &'static str = "fft_multiband_comp";
     const VENDOR: &'static str = "";
     const URL: &'static str = env!("CARGO_PKG_HOMEPAGE");
     const EMAIL: &'static str = "";
@@ -72,8 +72,6 @@ impl Plugin for PluginData {
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[AudioIOLayout {
         main_input_channels: NonZeroU32::new(2),
         main_output_channels: NonZeroU32::new(2),
-
-        aux_input_ports: &[new_nonzero_u32(2)],
 
         ..AudioIOLayout::const_default()
     }];
@@ -140,17 +138,11 @@ impl Plugin for PluginData {
             self.size_changed.store(false, Ordering::Relaxed);
         }
 
-        for (mut channel_samples, mut aux_channel_samples) in
-            buffer.iter_samples().zip(_aux.inputs[0].iter_samples())
-        {
+        for mut channel_samples in buffer.iter_samples() {
             let output_samples = self.stereo_fft_processor.process_sample(
                 [
                     *channel_samples.get_mut(0).unwrap(),
                     *channel_samples.get_mut(1).unwrap(),
-                ],
-                [
-                    *aux_channel_samples.get_mut(0).unwrap(),
-                    *aux_channel_samples.get_mut(1).unwrap(),
                 ],
             );
 
@@ -174,8 +166,8 @@ impl Plugin for PluginData {
 }
 
 impl ClapPlugin for PluginData {
-    const CLAP_ID: &'static str = "fft_adaptive_mixer";
-    const CLAP_DESCRIPTION: Option<&'static str> = Some("fft adaptive mixer");
+    const CLAP_ID: &'static str = "fft_multiband_comp";
+    const CLAP_DESCRIPTION: Option<&'static str> = Some("fft multiband comp");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);
     const CLAP_SUPPORT_URL: Option<&'static str> = None;
 
@@ -184,12 +176,11 @@ impl ClapPlugin for PluginData {
 }
 
 impl Vst3Plugin for PluginData {
-    const VST3_CLASS_ID: [u8; 16] = *b"fftadaptivemix__";
+    const VST3_CLASS_ID: [u8; 16] = *b"fftmultibandcomp";
 
     // And also don't forget to change these categories
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
         &[Vst3SubCategory::Fx, Vst3SubCategory::Dynamics];
 }
 
-//nih_export_clap!(FFTGate);
 nih_export_vst3!(PluginData);

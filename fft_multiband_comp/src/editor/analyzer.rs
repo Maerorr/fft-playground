@@ -59,7 +59,6 @@ impl View for Analyzer {
         draw_spectrum_guides(cx, canvas, analyzer_data);
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
         draw_bands(cx, canvas, analyzer_data);
-        //draw_reduction(cx, canvas, analyzer_data, nyquist, sr);
 
         // draw border
         let border_width = cx.border_width();
@@ -100,8 +99,6 @@ fn reduction_db_to_height(db_value: f32) -> f32 {
 
 #[inline]
 fn freq_to_x(f: f32) -> f32 {
-    //((f.clamp(MIN_F, MAX_F).ln() - MIN_F_LN) / (MAX_F_LN - MIN_F_LN)).clamp(0.0f32, 1.0f32)
-    //((f / REF_FREQ).ln() / (MAX_F / REF_FREQ).ln()).clamp(0.0f32, 1.0f32)
     ((f.clamp(MIN_F, MAX_F).ln() - MIN_F_LN) / (MAX_F_LN - MIN_F_LN)).clamp(0.0f32, 1.0f32)
 }
 
@@ -116,7 +113,7 @@ fn draw_spectrum(
     let border_width = cx.border_width();
 
     let mut bars_path = vg::Path::new();
-    bars_path.move_to(bounds.x + border_width / 2f32, bounds.y + bounds.h * 0.5);
+    bars_path.move_to(bounds.x + border_width / 2f32, bounds.y + bounds.h);
 
     for (magnitude, f) in analyzer_data
         .magnitudes
@@ -134,11 +131,11 @@ fn draw_spectrum(
 
         bars_path.line_to(
             physical_x_coord,
-            bounds.y + (bounds.h * (0.5 - height / 2.0)),
+            bounds.y + (bounds.h * (1.0 - height)),
         );
     }
 
-    bars_path.line_to(bounds.x + bounds.w, bounds.y + bounds.h * 0.5);
+    bars_path.line_to(bounds.x + bounds.w, bounds.y + bounds.h);
     bars_path.close();
 
     let bars_paint = vg::Paint::color(vg::Color::rgb(199, 207, 221)).with_line_width(0.0);
@@ -179,7 +176,7 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
 
     let mut low_fill = vg::Path::new();
     low_fill.rect(bounds.x, bounds.y, bounds.w * low_x, bounds.h);
-    let low_fill_paint = vg::Paint::color(vg::Color::rgba(220, 10, 10, 50));
+    let low_fill_paint = vg::Paint::color(vg::Color::rgba(220, 10, 10, 25));
     canvas.fill_path(&low_fill, &low_fill_paint);
 
     let mut bars_path = vg::Path::new();
@@ -192,7 +189,7 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
         bounds.w * (high_x - low_x),
         bounds.h,
     );
-    let mid_fill_paint = vg::Paint::color(vg::Color::rgba(220, 200, 10, 50));
+    let mid_fill_paint = vg::Paint::color(vg::Color::rgba(220, 200, 10, 25));
     canvas.fill_path(&mid_fill, &mid_fill_paint);
 
     let mut high_fill = vg::Path::new();
@@ -202,63 +199,11 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
         bounds.w * (1.0f32 - high_x),
         bounds.h,
     );
-    let high_fill_paint = vg::Paint::color(vg::Color::rgba(50, 200, 20, 50));
+    let high_fill_paint = vg::Paint::color(vg::Color::rgba(50, 200, 20, 25));
     canvas.fill_path(&high_fill, &high_fill_paint);
 
     bars_path.move_to(bounds.x + (bounds.w * high_x), bounds.y + (bounds.h));
     bars_path.line_to(bounds.x + (bounds.w * high_x), bounds.y);
     let bars_paint = vg::Paint::color(vg::Color::rgb(220, 220, 220)).with_line_width(1.0);
     canvas.stroke_path(&bars_path, &bars_paint);
-}
-
-pub fn draw_reduction(
-    cx: &mut DrawContext,
-    canvas: &mut Canvas,
-    analyzer_data: &AnalyzerData,
-    nyquist_hz: f32,
-    sr: f32,
-) {
-    let bounds = cx.bounds();
-    let border_width = cx.border_width();
-
-    // let mut shape_path = vg::Path::new();
-    // shape_path.move_to(bounds.x + (bounds.w * freq_to_x(200.0)), bounds.y + (bounds.h * (1.0 - 0.8)));
-    // shape_path.line_to(bounds.x + (bounds.w * freq_to_x(2000.0)), bounds.y + (bounds.h * (1.0 - 0.8)));
-    // shape_path.line_to(bounds.x + (bounds.w * freq_to_x(2000.0)), bounds.y + (bounds.h * (1.0 - 0.3)));
-    // //shape_path.line_to(bounds.x + (bounds.w * freq_to_x(200.0)), bounds.y + (bounds.h * (1.0 - 0.3)));
-    // //shape_path.line_to(bounds.x + (bounds.w * freq_to_x(200.0)), bounds.y + (bounds.h * (1.0 - 0.8)));
-    // shape_path.close();
-    // let bars_paint = vg::Paint::color(vg::Color::rgb(230, 230, 250)).with_line_width(1.0);
-    // canvas.fill_path(&shape_path, &bars_paint);
-
-    let mut bars_path = vg::Path::new();
-    bars_path.move_to(bounds.x + border_width / 2f32, bounds.y + bounds.h * 0.5);
-
-    for (reduction, f) in analyzer_data
-        .reduction
-        .iter()
-        .zip(analyzer_data.frequencies.iter())
-        .take(analyzer_data.num_bins - 1)
-        .skip(1)
-    {
-        let x = freq_to_x(*f);
-
-        let physical_x_coord =
-            bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
-
-        //let height = reduction_db_to_height(*reduction);
-        let height = reduction_db_to_height(*reduction);
-
-        bars_path.line_to(
-            physical_x_coord,
-            bounds.y + (bounds.h * (0.5 + height / 2.0)),
-        );
-        //bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
-    }
-
-    bars_path.line_to(bounds.x + bounds.w, bounds.y + bounds.h * 0.5);
-    bars_path.close();
-
-    let bars_paint = vg::Paint::color(vg::Color::rgb(122, 9, 250)).with_line_width(0.0);
-    canvas.fill_path(&bars_path, &bars_paint);
 }

@@ -9,14 +9,12 @@ use nih_plug_vizia::vizia::{prelude::*, vg};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use param_knob::ParamKnob;
-use peak_curve::PeakCurve;
 
 use crate::analyzer_data::AnalyzerData;
 use crate::PluginParams;
 
 mod analyzer;
 mod param_knob;
-mod peak_curve;
 
 pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.ttf");
 pub const COMFORTAA: &str = "Comfortaa";
@@ -74,6 +72,65 @@ pub(crate) fn create(
                         .height(Pixels(400.0))
                         .border_color(SPECTRUM_BORDER_COLOR)
                         .border_width(Pixels(4.0));
+
+                    VStack::new(cx, |cx| {
+                        HStack::new(cx, |cx| {
+                            // LOW BAND PARAMS
+                            HStack::new(cx, |cx| {
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.low_threshold, false, 
+                                    String::from("mid"), 
+                                    true);
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.low_gain, false, 
+                                    String::from("mid"), 
+                                    true);
+                            })
+                            .width(Pixels(200.0))
+                            .space(Stretch(1.0));
+    
+                            // MID BAND PARAMS
+                            HStack::new(cx, |cx| {
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.mid_threshold, false, 
+                                    String::from("mid"), 
+                                    true);
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.mid_gain, false, 
+                                    String::from("mid"), 
+                                    true);
+                            })
+                            .width(Pixels(200.0))
+                            .space(Stretch(1.0));
+    
+                            // HIGH BAND PARAMS
+                            HStack::new(cx, |cx| {
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.high_threshold, false, 
+                                    String::from("mid"), 
+                                    true);
+                                ParamKnob::new(cx, 
+                                    EditorData::plugin_data, |params| &params.high_gain, false, 
+                                    String::from("mid"), 
+                                    true);
+                            })
+                            .width(Pixels(200.0))
+                            .space(Stretch(1.0));
+                        }).width(Pixels(850.0));
+
+                        HStack::new(cx, |cx| {
+                            ParamSlider::new(cx, EditorData::plugin_data, |params| &params.low_mid_frequency)
+                            .left(Pixels(233.0))
+                            .right(Pixels(50.0));
+                            ParamSlider::new(cx, EditorData::plugin_data, |params| &params.mid_high_frequency)
+                            .left(Pixels(50.0))
+                            .right(Pixels(50.0));
+                        })
+                        .top(Pixels(90.0))
+                        .height(Pixels(120.0))
+                        .width(Pixels(850.0));
+                    }).width(Pixels(850.0));
+                    
                 })
                 .row_between(Pixels(0.0))
                 .child_left(Stretch(1.0))
