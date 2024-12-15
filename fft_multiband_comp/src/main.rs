@@ -1,6 +1,4 @@
-use std::env::Args;
-
-use fft_adaptive_mixer::PluginData;
+use fft_multiband_compressor::PluginData;
 use nih_plug::prelude::*;
 
 fn main() {

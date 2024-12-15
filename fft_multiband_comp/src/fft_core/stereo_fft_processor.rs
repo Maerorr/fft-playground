@@ -16,7 +16,7 @@ use crate::{
     WINDOW_CORRECTION,
 };
 
-use super::{fft_data::FFTData, fft_size::FFTSize};
+use super::{fft_data::FFTData, fft_size::FFTSize, spectral_multiband_compressor::SpectralMultibandCompressor};
 
 pub struct StereoFFTProcessor {
     input_buffer: [Vec<f32>; 2],
@@ -26,6 +26,7 @@ pub struct StereoFFTProcessor {
 
     pub pos: usize,
     pub count_to_next_hop: usize,
+    pub hop_size: usize,
 
     sample_rate: usize,
 
@@ -38,7 +39,7 @@ pub struct StereoFFTProcessor {
 
     size_changed: Arc<AtomicBool>,
 
-    //pub fft_effect: AdaptiveMixer,
+    pub fft_effect: SpectralMultibandCompressor,
 }
 
 unsafe impl Send for StereoFFTProcessor {}
@@ -66,6 +67,7 @@ impl StereoFFTProcessor {
 
             pos: 0,
             count_to_next_hop: 0,
+            hop_size: fft_size / 4,
 
             sample_rate,
 
@@ -78,17 +80,42 @@ impl StereoFFTProcessor {
 
             size_changed,
 
-            //fft_effect: AdaptiveMixer::new(fft_size_to_bins(fft_size), sample_rate as f32),
+            fft_effect: SpectralMultibandCompressor::new(
+                -20.0,
+                0.0,
+                -20.0,
+                0.0,
+                -20.0,
+                0.0,
+                10.0,
+                100.0,
+                10.0,
+                fft_size,
+                300.0,
+                3500.0,
+                sample_rate as f32,
+            ),
         }
     }
 
-    pub fn set_params(&mut self, an_chan: AnalyzerChannel) {
+    pub fn set_params(&mut self, an_chan: AnalyzerChannel, low_th: f32, low_g: f32, mid_th: f32, mid_g: f32, high_th: f32, high_g: f32) {
         self.analyzer_channel = an_chan;
-        //self.fft_effect.set_params();
+        
+        self.fft_effect.set_params(
+            low_th, 
+            low_g, 
+            mid_th, 
+            mid_g, 
+            high_th, 
+            high_g, 
+            10.0, 
+            50.0, 
+            self.sample_rate as f32 / self.hop_size as f32);
     }
 
     pub fn set_sample_rate(&mut self, sr: usize) {
         self.sample_rate = sr;
+        self.fft_effect.set_hops_per_second(sr as f32 / self.hop_size as f32);
     }
 
     pub fn change_fft_size(&mut self, new_size: usize) {
@@ -115,8 +142,9 @@ impl StereoFFTProcessor {
 
         self.pos = 0;
         self.count_to_next_hop = 0;
+        self.hop_size = new_size / 4;
 
-        //self.fft_effect.resize(fft_size_to_bins(new_size));
+        self.fft_effect.resize(new_size);
     }
 
     pub fn process_sample(&mut self, samples_lr: [f32; 2]) -> [f32; 2] {
@@ -136,7 +164,7 @@ impl StereoFFTProcessor {
         }
 
         self.count_to_next_hop += 1;
-        if self.count_to_next_hop == self.fft_size / 4 {
+        if self.count_to_next_hop == self.hop_size {
             self.count_to_next_hop = 0;
             self.process_windows();
         }
@@ -243,19 +271,13 @@ impl StereoFFTProcessor {
     }
 
     fn process_spectrum(&mut self) {
-        // self.fft_effect.process_spectrum(
-        //     [&self.data[0].spectrum_mag, &self.data[1].spectrum_mag],
-        //     [&self.data[0].spectrum_phase, &self.data[1].spectrum_phase],
-        //     [&self.data[0].spectrum_db, &self.data[1].spectrum_db],
-        //     [&self.data[0].spectrum_freq, &self.data[1].spectrum_freq],
-        //     &mut self.ifft_in,
-        // );
-
-        // for channel in 0..2 {
-        //     for (i, mag) in self.data[channel].spectrum_mag.iter().enumerate() {
-        //         self.ifft_in[channel][i] = *mag;
-        //     }
-        // }
+        self.fft_effect.process(
+            [&self.data[0].spectrum_mag, &self.data[1].spectrum_mag],
+            [&self.data[0].spectrum_phase, &self.data[1].spectrum_phase],
+            [&self.data[0].spectrum_db, &self.data[1].spectrum_db],
+            [&self.data[0].spectrum_freq, &self.data[1].spectrum_freq],
+            &mut self.ifft_in,
+        );
     }
 
     fn calculate_analyzer_db(&mut self) {

@@ -58,15 +58,16 @@ impl PluginParams {
             
             low_mid_frequency: FloatParam::new("Low/Mid Frequency", 300.0f32, FloatRange::Skewed { min: 100.0f32, max: 8_000f32, factor: 0.6 })
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(1)),
-            mid_high_frequency: FloatParam::new("Mid/High Frequency", 300.0f32, FloatRange::Skewed { min: 300.0f32, max: 10_000f32, factor: 0.6 })
+            mid_high_frequency: FloatParam::new("Mid/High Frequency", 3500.0f32, FloatRange::Skewed { min: 300.0f32, max: 10_000f32, factor: 0.6 })
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(1)),
             
             low_threshold: FloatParam::new(
                 "Low Threshold",
                 utils::db_to_gain(0f32),
-                FloatRange::Linear {
+                FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
                     max: utils::db_to_gain(20f32),
+                    factor: 0.6,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -84,9 +85,10 @@ impl PluginParams {
             mid_threshold: FloatParam::new(
                 "Mid Threshold",
                 utils::db_to_gain(0f32),
-                FloatRange::Linear {
+                FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
                     max: utils::db_to_gain(20f32),
+                    factor: 0.6,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -104,9 +106,10 @@ impl PluginParams {
             high_threshold: FloatParam::new(
                 "High Threshold",
                 utils::db_to_gain(0f32),
-                FloatRange::Linear {
+                FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
                     max: utils::db_to_gain(20f32),
+                    factor: 0.6,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))

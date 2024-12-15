@@ -1,5 +1,5 @@
 use analyzer_data::{AnalyzerChannel, AnalyzerData};
-use fft_core::{fft_size::FFTSize, stereo_fft_processor::StereoFFTProcessor};
+use fft_core::{compressor::Compressor, fft_size::FFTSize, stereo_fft_processor::StereoFFTProcessor};
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
 use params::PluginParams;
@@ -29,6 +29,7 @@ const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 
 pub struct PluginData {
     stereo_fft_processor: StereoFFTProcessor,
+    compressor: Compressor,
     params: Arc<PluginParams>,
     analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
     sample_rate: Arc<AtomicF32>,
@@ -44,6 +45,9 @@ impl Default for PluginData {
         .split();
         let size_changed = Arc::new(AtomicBool::new(false));
 
+        let attack_coeff = (-1.0f32 / (10.0 * 44100.0 * 0.001)).exp();
+        let release_coeff = (-1.0f32 / (50.0 * 44100.0 * 0.001)).exp();
+
         Self {
             stereo_fft_processor: StereoFFTProcessor::new(
                 44100,
@@ -51,6 +55,7 @@ impl Default for PluginData {
                 size_changed.clone(),
                 analyzer_input_data,
             ),
+            compressor: Compressor::new(-30.0, 2.0, 5.0, attack_coeff, release_coeff),
             params: Arc::new(PluginParams::new(size_changed.clone())),
             analyzer_output_data: Arc::new(Mutex::new(analyzer_output_data)),
             sample_rate: Arc::new(AtomicF32::new(1.0)),
@@ -113,6 +118,11 @@ impl Plugin for PluginData {
             _buffer_config.sample_rate,
             std::sync::atomic::Ordering::Relaxed,
         );
+
+        let attack_coeff = (-1.0f32 / (10.0 * _buffer_config.sample_rate as f32 * 0.001)).exp();
+        let release_coeff = (-1.0f32 / (50.0 * _buffer_config.sample_rate as f32 * 0.001)).exp();
+
+        self.compressor.set_params(-30.0, 2.0, 5.0, attack_coeff, release_coeff);
         true
     }
 
@@ -132,6 +142,32 @@ impl Plugin for PluginData {
         let an_chan = self.params.analyzer_channel.value();
         let fft_size = self.params.fft_size.value();
 
+        let low_mid_freq = self.params.low_mid_frequency.value();
+        let mid_high_freq = self.params.mid_high_frequency.value();
+
+        let low_threshold =  utils::gain_to_db(self.params.low_threshold.value());
+        let low_gain =       utils::gain_to_db(self.params.low_gain.value());
+        let mid_threshold =  utils::gain_to_db(self.params.mid_threshold.value());
+        let mid_gain =       utils::gain_to_db(self.params.mid_gain.value());
+        let high_threshold = utils::gain_to_db(self.params.high_threshold.value());
+        let high_gain =      utils::gain_to_db(self.params.high_gain.value());
+
+        self.stereo_fft_processor.set_params(
+            an_chan,
+            low_threshold,
+            low_gain,
+            mid_threshold,
+            mid_gain,
+            high_threshold,
+            high_gain,
+        );
+
+        let attack_coeff = (-1.0f32 / (20.0 * self.sample_rate.load(Ordering::Relaxed) * 0.001)).exp();
+        let release_coeff = (-1.0f32 / (100.0 * self.sample_rate.load(Ordering::Relaxed) * 0.001)).exp();
+        nih_log!("threshold: {}", mid_threshold);
+        self.compressor.set_params(mid_threshold, 2.0, 5.0, attack_coeff, release_coeff);
+
+
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
             self.stereo_fft_processor.change_fft_size(fft_size as usize);
@@ -139,15 +175,17 @@ impl Plugin for PluginData {
         }
 
         for mut channel_samples in buffer.iter_samples() {
-            let output_samples = self.stereo_fft_processor.process_sample(
-                [
-                    *channel_samples.get_mut(0).unwrap(),
-                    *channel_samples.get_mut(1).unwrap(),
-                ],
-            );
+            // let output_samples = self.stereo_fft_processor.process_sample(
+            //     [
+            //         *channel_samples.get_mut(0).unwrap(),
+            //         *channel_samples.get_mut(1).unwrap(),
+            //     ],
+            // );
+            let output = self.compressor.process(*channel_samples.get_mut(0).unwrap());
+            //nih_log!("output: {}", output);
 
-            *channel_samples.get_mut(0).unwrap() = output_samples[0];
-            *channel_samples.get_mut(1).unwrap() = output_samples[1];
+            *channel_samples.get_mut(0).unwrap() = output;
+            *channel_samples.get_mut(1).unwrap() = output;
         }
 
         ProcessStatus::Normal

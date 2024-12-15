@@ -87,7 +87,11 @@ pub(crate) fn create(
                                     true);
                             })
                             .width(Pixels(200.0))
-                            .space(Stretch(1.0));
+                            .height(Pixels(80.0))
+                            .child_left(Pixels(10.0))
+                            .child_right(Pixels(10.0))
+                            .right(Stretch(1.0))
+                            .left(Stretch(1.0));;
     
                             // MID BAND PARAMS
                             HStack::new(cx, |cx| {
@@ -101,7 +105,11 @@ pub(crate) fn create(
                                     true);
                             })
                             .width(Pixels(200.0))
-                            .space(Stretch(1.0));
+                            .height(Pixels(80.0))
+                            .child_left(Pixels(10.0))
+                            .child_right(Pixels(10.0))
+                            .right(Stretch(1.0))
+                            .left(Stretch(1.0));
     
                             // HIGH BAND PARAMS
                             HStack::new(cx, |cx| {
@@ -115,8 +123,14 @@ pub(crate) fn create(
                                     true);
                             })
                             .width(Pixels(200.0))
-                            .space(Stretch(1.0));
-                        }).width(Pixels(850.0));
+                            .height(Pixels(80.0))
+                            .child_left(Pixels(10.0))
+                            .child_right(Pixels(10.0))
+                            .right(Stretch(1.0))
+                            .left(Stretch(1.0));
+                        })
+                        .height(Pixels(100.0))
+                        .width(Pixels(850.0));
 
                         HStack::new(cx, |cx| {
                             ParamSlider::new(cx, EditorData::plugin_data, |params| &params.low_mid_frequency)
@@ -126,10 +140,12 @@ pub(crate) fn create(
                             .left(Pixels(50.0))
                             .right(Pixels(50.0));
                         })
-                        .top(Pixels(90.0))
-                        .height(Pixels(120.0))
+                        //.top(Pixels(10.0))
+                        .height(Pixels(65.0))
                         .width(Pixels(850.0));
-                    }).width(Pixels(850.0));
+                    })
+                    .height(Pixels(145.0))
+                    .width(Pixels(850.0));
                     
                 })
                 .row_between(Pixels(0.0))

@@ -38,6 +38,7 @@ impl Enum for FFTSize {
 }
 
 impl FFTSize {
+    #[inline]
     pub fn num_bins(&self) -> usize {
         *self as usize / 2 + 1
     }

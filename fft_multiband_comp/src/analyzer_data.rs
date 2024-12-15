@@ -12,6 +12,7 @@ pub struct AnalyzerData {
     pub num_bins: usize,
     pub magnitudes: Vec<f32>,
     pub frequencies: Vec<f32>,
+    pub bands: [f32; 2],
 }
 
 impl AnalyzerData {
@@ -20,6 +21,7 @@ impl AnalyzerData {
             num_bins,
             magnitudes: vec![0.0f32; num_bins],
             frequencies: vec![0.0f32; num_bins],
+            bands: [0.0f32; 2],
         }
     }
 }

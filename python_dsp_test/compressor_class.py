@@ -34,7 +34,7 @@ class Compressor:
             else:
                 reduction[i] = self.Th + (x - self.Th) / self.R
                 
-        return reduction
+        return reduction - env
 
     
     def plot_compression(self, input_signal):
