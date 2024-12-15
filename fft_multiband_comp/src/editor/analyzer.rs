@@ -5,8 +5,6 @@ use nih_plug::{nih_debug_assert, nih_log, prelude::AtomicF32};
 use nih_plug_vizia::vizia::{image::Pixel, prelude::*, vg};
 use std::sync::atomic::Ordering;
 
-use super::EQ_FREQS;
-
 const MIN_F: f32 = 20.0f32;
 const MAX_F: f32 = 20_000.0f32;
 
@@ -59,6 +57,7 @@ impl View for Analyzer {
         draw_spectrum_guides(cx, canvas, analyzer_data);
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
         draw_bands(cx, canvas, analyzer_data);
+        draw_delta(cx, canvas, analyzer_data);
 
         // draw border
         let border_width = cx.border_width();
@@ -94,7 +93,7 @@ fn eq_db_to_height(db_value: f32) -> f32 {
 
 #[inline]
 fn reduction_db_to_height(db_value: f32) -> f32 {
-    ((db_value) / 80.0).clamp(0.0f32, 1.0f32)
+    0.5f32 + (db_value / 60.0f32).clamp(-0.5, 0.5)
 }
 
 #[inline]
@@ -127,11 +126,11 @@ fn draw_spectrum(
         let physical_x_coord =
             bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
 
-        let height = db_to_height(*magnitude);
+        let height = db_to_height(*magnitude).clamp(0.0, 0.99);
 
         bars_path.line_to(
             physical_x_coord,
-            bounds.y + (bounds.h * (1.0 - height)),
+            bounds.y + (bounds.h * (1.0 - height) - border_width),
         );
     }
 
@@ -205,5 +204,36 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
     bars_path.move_to(bounds.x + (bounds.w * high_x), bounds.y + (bounds.h));
     bars_path.line_to(bounds.x + (bounds.w * high_x), bounds.y);
     let bars_paint = vg::Paint::color(vg::Color::rgb(220, 220, 220)).with_line_width(1.0);
+    canvas.stroke_path(&bars_path, &bars_paint);
+}
+
+fn draw_delta(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &AnalyzerData) {
+    let bounds = cx.bounds();
+    let border_width = cx.border_width();
+
+    let mut bars_path = vg::Path::new();
+    bars_path.move_to(bounds.x + border_width / 2f32, bounds.y + bounds.h / 2f32);
+
+    for (magnitude, f) in analyzer_data
+        .delta
+        .iter()
+        .zip(analyzer_data.frequencies.iter())
+        .take(analyzer_data.num_bins - 1)
+        .skip(1)
+    {
+        let x = freq_to_x(*f);
+
+        let physical_x_coord =
+            bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+
+        let height = reduction_db_to_height(*magnitude);
+
+        bars_path.line_to(
+            physical_x_coord,
+            bounds.y + (bounds.h * (1.0 - height)),
+        );
+    }
+
+    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 24, 221)).with_line_width(2.0);
     canvas.stroke_path(&bars_path, &bars_paint);
 }

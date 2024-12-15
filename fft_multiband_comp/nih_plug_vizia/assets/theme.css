@@ -60,23 +60,23 @@ scrollview scrollbar .thumb:hover {
 }
 
 .main-param-knob-whole {
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
 }
 
 .main-param-knob {
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
 }
 
 .mid-param-knob-whole {
-  width: 60px;
-  height: 80px;
+  width: 80px;
+  height: 100px;
 }
 
 .mid-param-knob {
-  width: 60px;
-  height: 70px;
+  width: 80px;
+  height: 90px;
 }
 
 .cut-param-knob-whole {

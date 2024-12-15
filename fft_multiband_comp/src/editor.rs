@@ -18,10 +18,16 @@ mod param_knob;
 
 pub const COMFORTAA_LIGHT_TTF: &[u8] = include_bytes!("../res/Comfortaa-Light.ttf");
 pub const COMFORTAA: &str = "Comfortaa";
-pub const EQ_FREQS: [f32; 9] = [20.0, 189.32, 368.40, 716.87, 1394.95, 2714.41, 5281.95, 10278.08, 20000.0]; 
 
 const WIDTH: u32 = 1050;
-const HEIGHT: u32 = 545; 
+const HEIGHT: u32 = 500; 
+
+const ANALYZER_WIDTH: f32 = 800.0;
+const ANALYZER_HEIGHT: f32 = 350.0;
+
+const SIDE_PANEL_WIDTH: f32 = WIDTH as f32 - ANALYZER_WIDTH;
+const SIDE_PANEL_HEIGHT: f32 = HEIGHT as f32;
+
 
 const PANEL_COLOR: Color = Color::rgb(36, 35, 43);
 const SPECTRUM_BORDER_COLOR: Color = Color::rgb(72, 71, 93);
@@ -54,22 +60,39 @@ pub(crate) fn create(
             HStack::new(cx, |cx| {
                 //params go here \/
                 VStack::new(cx, |cx| {
-                    
+                    // attack and release
+                    HStack::new(cx, |cx| {
+                        ParamKnob::new(cx, 
+                            EditorData::plugin_data, |params| &params.attack_ms, false, 
+                            String::from("main"), 
+                            true)
+                            .width(Pixels(110.0))
+                            .height(Pixels(110.0));
+                        ParamKnob::new(cx, 
+                            EditorData::plugin_data, |params| &params.release_ms, false, 
+                            String::from("main"), 
+                            true)
+                            .width(Pixels(110.0))
+                            .height(Pixels(110.0));
+                    })
+                    .left(Pixels(12.0))
+                    .height(Pixels(110.0))
+                    .width(Pixels(210.0));
                 })
                 .row_between(Pixels(0.0))
                 .child_left(Stretch(1.0))
                 .child_right(Stretch(1.0))
-                .width(Pixels(200.0))
-                .height(Pixels(HEIGHT as f32))
-                .background_color(PANEL_COLOR);
+                .width(Pixels(SIDE_PANEL_WIDTH))
+                .height(Pixels(SIDE_PANEL_HEIGHT))
+                .background_color(Color::black());
 
                 // ANALYZER + EQ
                 VStack::new(cx, |cx| {
                     Analyzer::new(cx, EditorData::analyzer_data, EditorData::sample_rate)
                         .left(Stretch(1.0))
                         .right(Stretch(1.0))
-                        .width(Pixels(850.0))
-                        .height(Pixels(400.0))
+                        .width(Pixels(ANALYZER_WIDTH))
+                        .height(Pixels(ANALYZER_HEIGHT))
                         .border_color(SPECTRUM_BORDER_COLOR)
                         .border_width(Pixels(4.0));
 
@@ -130,7 +153,7 @@ pub(crate) fn create(
                             .left(Stretch(1.0));
                         })
                         .height(Pixels(100.0))
-                        .width(Pixels(850.0));
+                        .width(Pixels(ANALYZER_WIDTH));
 
                         HStack::new(cx, |cx| {
                             ParamSlider::new(cx, EditorData::plugin_data, |params| &params.low_mid_frequency)
@@ -151,7 +174,7 @@ pub(crate) fn create(
                 .row_between(Pixels(0.0))
                 .child_left(Stretch(1.0))
                 .child_right(Stretch(1.0))
-                .width(Pixels(850.0))
+                .width(Pixels(ANALYZER_WIDTH))
                 .background_color(PANEL_COLOR);
             })
             .child_left(Stretch(1.0))

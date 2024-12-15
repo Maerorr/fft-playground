@@ -98,7 +98,18 @@ impl StereoFFTProcessor {
         }
     }
 
-    pub fn set_params(&mut self, an_chan: AnalyzerChannel, low_th: f32, low_g: f32, mid_th: f32, mid_g: f32, high_th: f32, high_g: f32) {
+    pub fn set_params(
+        &mut self, 
+        an_chan: AnalyzerChannel, 
+        low_th: f32, 
+        low_g: f32, 
+        mid_th: f32, 
+        mid_g: f32, 
+        high_th: f32, 
+        high_g: f32,
+        attack_ms: f32,
+        release_ms: f32,
+    ) {
         self.analyzer_channel = an_chan;
         
         self.fft_effect.set_params(
@@ -108,8 +119,8 @@ impl StereoFFTProcessor {
             mid_g, 
             high_th, 
             high_g, 
-            10.0, 
-            50.0, 
+            attack_ms, 
+            release_ms, 
             self.sample_rate as f32 / self.hop_size as f32);
     }
 
@@ -258,15 +269,15 @@ impl StereoFFTProcessor {
             // let db3 = -40.0;
             // let db4 = -20.0;
 
-            // self.aux_data[channel].spectrum_mag[10] = utils::db_to_gain(db1);
-            // self.aux_data[channel].spectrum_mag[11] = utils::db_to_gain(db2);
-            // self.aux_data[channel].spectrum_mag[12] = utils::db_to_gain(db3);
-            // self.aux_data[channel].spectrum_mag[50] = utils::db_to_gain(db4);
+            // self.data[channel].spectrum_mag[10] = utils::db_to_gain(db1);
+            // self.data[channel].spectrum_mag[11] = utils::db_to_gain(db2);
+            // self.data[channel].spectrum_mag[12] = utils::db_to_gain(db3);
+            // self.data[channel].spectrum_mag[50] = utils::db_to_gain(db4);
 
-            // self.aux_data[channel].spectrum_db[10] = db1;
-            // self.aux_data[channel].spectrum_db[11] = db2;
-            // self.aux_data[channel].spectrum_db[12] = db3;
-            // self.aux_data[channel].spectrum_db[50] = db4;
+            // self.data[channel].spectrum_db[10] = db1;
+            // self.data[channel].spectrum_db[11] = db2;
+            // self.data[channel].spectrum_db[12] = db3;
+            // self.data[channel].spectrum_db[50] = db4;
         }
     }
 
@@ -278,16 +289,19 @@ impl StereoFFTProcessor {
             [&self.data[0].spectrum_freq, &self.data[1].spectrum_freq],
             &mut self.ifft_in,
         );
+
+        // for channel in 0..2 {
+        //     for (i, (mag, phase)) in self.data[channel].spectrum_mag.iter().zip(self.data[channel].spectrum_phase.iter()).enumerate() {
+        //         self.ifft_in[channel][i] = Complex::from_polar(*mag, *phase);
+        //     }
+        // }
     }
 
     fn calculate_analyzer_db(&mut self) {
         for channel in 0..2 {
             for i in 1..(utils::fft_size_to_bins(self.fft_size) - 1) {
                 self.data[channel].spectrum_mag[i] = self.ifft_in[channel][i].norm();
-                self.data[channel].spectrum_db[i] =
-                    util::gain_to_db(self.data[channel].spectrum_mag[i]);
-                //self.data[channel].spectrum_mag[i] = self.aux_data[channel].spectrum_mag[i];
-                //self.data[channel].spectrum_db[i] = util::gain_to_db(self.aux_data[channel].spectrum_mag[i]);
+                self.data[channel].spectrum_db[i] = util::gain_to_db(self.data[channel].spectrum_mag[i]);
             }
         }
     }
@@ -302,6 +316,13 @@ impl StereoFFTProcessor {
             .enumerate()
         {
             *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
+        }
+
+        for (i, delta) in analyzer_input.delta[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
+            if (self.fft_effect.delta[i] != 0.0) {
+                nih_log!("{}: {}", i, self.fft_effect.delta[i])
+            }
+            *delta = self.fft_effect.delta[i];
         }
 
         for (i, f) in analyzer_input.frequencies[0..utils::fft_size_to_bins(self.fft_size)]

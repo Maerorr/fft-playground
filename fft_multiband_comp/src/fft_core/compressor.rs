@@ -1,6 +1,7 @@
 use crate::utils;
 use nih_plug::nih_log;
 
+#[derive(Clone, Copy)]
 pub struct Compressor {
     pub th: f32,
     pub r: f32,
@@ -33,9 +34,8 @@ impl Compressor {
         self.rel = rel_coeff;
     }
 
-    pub fn process_db(&mut self, x_db: f32) -> f32 {
-        let output = 0.0;
-        
+    // returns by how much to CHANGE the signal. Not the final output value
+    pub fn process_db(&mut self, x_db: f32) -> f32 {        
         // first, update envelope follower
         if x_db > self.env {
             self.env = self.att * (self.env - x_db) + x_db;
@@ -47,18 +47,20 @@ impl Compressor {
         if 2.0 * (self.env - self.th) < -self.w {
             self.reduced = self.env;
         } else if 2.0 * (self.env - self.th).abs() <= self.w {
-            self.reduced = x_db + ((1.0 / self.r - 1.0) * (x_db - self.th + self.w / 2.0).powi(2)) / (2.0 * self.w);
+            self.reduced = self.env + ((1.0 / self.r - 1.0) * (self.env - self.th + self.w / 2.0).powi(2)) / (2.0 * self.w);
         } else {
             self.reduced = self.th + (self.env - self.th) / self.r;
         }
 
         // input * reduction, but in db
-        x_db + (output - self.env)
+        // x_db + (output - self.env)
+
+        // delta
+        self.reduced - self.env
     }
 
     pub fn process(&mut self, x: f32) -> f32 {
         let x_db = utils::gain_to_db(x.abs());
-        
         // first, update envelope follower
         if x_db > self.env {
             self.env = self.att * (self.env - x_db) + x_db;

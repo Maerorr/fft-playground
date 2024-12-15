@@ -45,6 +45,12 @@ pub struct PluginParams {
 
     #[id = "high-gain"]
     pub high_gain: FloatParam,
+
+    #[id = "attack-ms"]
+    pub attack_ms: FloatParam,
+
+    #[id = "release-ms"]
+    pub release_ms: FloatParam,
 }
 
 impl PluginParams {
@@ -66,8 +72,8 @@ impl PluginParams {
                 utils::db_to_gain(0f32),
                 FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
-                    max: utils::db_to_gain(20f32),
-                    factor: 0.6,
+                    max: utils::db_to_gain(0f32),
+                    factor: 0.3,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -87,8 +93,8 @@ impl PluginParams {
                 utils::db_to_gain(0f32),
                 FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
-                    max: utils::db_to_gain(20f32),
-                    factor: 0.6,
+                    max: utils::db_to_gain(0f32),
+                    factor: 0.3,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -108,8 +114,8 @@ impl PluginParams {
                 utils::db_to_gain(0f32),
                 FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
-                    max: utils::db_to_gain(20f32),
-                    factor: 0.6,
+                    max: utils::db_to_gain(0f32),
+                    factor: 0.3,
                 },
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
@@ -124,6 +130,25 @@ impl PluginParams {
             )
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
+            attack_ms: FloatParam::new(
+                "Attack",
+                10.0f32,
+                FloatRange::Linear {
+                    min: 0.1f32,
+                    max: 100.0f32,
+                },
+            )
+            .with_value_to_string(formatters::v2s_f32_rounded(1))
+            .with_unit("ms"),
+            release_ms: FloatParam::new(
+                "Release",
+                50.0f32,
+                FloatRange::Linear {
+                    min: 1.0f32,
+                    max: 200.0f32,
+                },
+            ).with_value_to_string(formatters::v2s_f32_rounded(1))
+            .with_unit("ms"),
         }
     }
 }

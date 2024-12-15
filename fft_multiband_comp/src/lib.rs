@@ -40,7 +40,6 @@ impl Default for PluginData {
     fn default() -> Self {
         let (analyzer_input_data, analyzer_output_data) = TripleBuffer::new(&AnalyzerData::new(
             utils::fft_size_to_bins(FFTSize::_4096 as usize),
-            44100,
         ))
         .split();
         let size_changed = Arc::new(AtomicBool::new(false));
@@ -151,6 +150,8 @@ impl Plugin for PluginData {
         let mid_gain =       utils::gain_to_db(self.params.mid_gain.value());
         let high_threshold = utils::gain_to_db(self.params.high_threshold.value());
         let high_gain =      utils::gain_to_db(self.params.high_gain.value());
+        let attack_ms = self.params.attack_ms.value();
+        let release_ms = self.params.release_ms.value();
 
         self.stereo_fft_processor.set_params(
             an_chan,
@@ -160,13 +161,9 @@ impl Plugin for PluginData {
             mid_gain,
             high_threshold,
             high_gain,
+            attack_ms,
+            release_ms,
         );
-
-        let attack_coeff = (-1.0f32 / (20.0 * self.sample_rate.load(Ordering::Relaxed) * 0.001)).exp();
-        let release_coeff = (-1.0f32 / (100.0 * self.sample_rate.load(Ordering::Relaxed) * 0.001)).exp();
-        nih_log!("threshold: {}", mid_threshold);
-        self.compressor.set_params(mid_threshold, 2.0, 5.0, attack_coeff, release_coeff);
-
 
         if self.size_changed.load(Ordering::Relaxed) {
             _context.set_latency_samples(fft_size as u32);
@@ -175,17 +172,15 @@ impl Plugin for PluginData {
         }
 
         for mut channel_samples in buffer.iter_samples() {
-            // let output_samples = self.stereo_fft_processor.process_sample(
-            //     [
-            //         *channel_samples.get_mut(0).unwrap(),
-            //         *channel_samples.get_mut(1).unwrap(),
-            //     ],
-            // );
-            let output = self.compressor.process(*channel_samples.get_mut(0).unwrap());
-            //nih_log!("output: {}", output);
+            let output_samples = self.stereo_fft_processor.process_sample(
+                [
+                    *channel_samples.get_mut(0).unwrap(),
+                    *channel_samples.get_mut(1).unwrap(),
+                ],
+            );
 
-            *channel_samples.get_mut(0).unwrap() = output;
-            *channel_samples.get_mut(1).unwrap() = output;
+            *channel_samples.get_mut(0).unwrap() = output_samples[0];
+            *channel_samples.get_mut(1).unwrap() = output_samples[1];
         }
 
         ProcessStatus::Normal
