@@ -145,24 +145,42 @@ impl Plugin for PluginData {
         let mid_high_freq = self.params.mid_high_frequency.value();
 
         let low_threshold =  utils::gain_to_db(self.params.low_threshold.value());
-        let low_gain =       utils::gain_to_db(self.params.low_gain.value());
+        let low_ratio = self.params.low_ratio.value();
+        let low_up_ratio = self.params.low_up_ratio.value();
+        let low_gain = self.params.low_gain.value();
         let mid_threshold =  utils::gain_to_db(self.params.mid_threshold.value());
-        let mid_gain =       utils::gain_to_db(self.params.mid_gain.value());
+        let mid_ratio = self.params.mid_ratio.value();
+        let mid_up_ratio = self.params.mid_up_ratio.value();
+        let mid_gain = self.params.mid_gain.value();
         let high_threshold = utils::gain_to_db(self.params.high_threshold.value());
-        let high_gain =      utils::gain_to_db(self.params.high_gain.value());
+        let high_ratio = self.params.high_ratio.value();
+        let high_up_ratio = self.params.high_up_ratio.value();
+        let high_gain = self.params.high_gain.value();
         let attack_ms = self.params.attack_ms.value();
         let release_ms = self.params.release_ms.value();
+        let mix = self.params.mix.value();
+        let in_gain = self.params.in_gain.value();
+        let out_gain = self.params.out_gain.value();
 
         self.stereo_fft_processor.set_params(
             an_chan,
             low_threshold,
+            low_ratio,
+            low_up_ratio,
             low_gain,
             mid_threshold,
+            mid_ratio,
+            mid_up_ratio,
             mid_gain,
             high_threshold,
+            high_ratio,
+            high_up_ratio,
             high_gain,
             attack_ms,
             release_ms,
+            mix,
+            in_gain,
+            out_gain,
         );
 
         if self.size_changed.load(Ordering::Relaxed) {

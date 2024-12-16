@@ -83,11 +83,11 @@ param-slider:hover {
 }
 
 param-slider .fill {
-  background-color: #075b5e;
+  background-color: #6e6938;
 }
 
 param-slider .fill--modulation {
-  background-color: #30575f69;
+  background-color: #6e69386e;
 }
 
 /* This is a textbox, but we want it to appear just like the label */

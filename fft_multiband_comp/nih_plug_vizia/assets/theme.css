@@ -70,13 +70,43 @@ scrollview scrollbar .thumb:hover {
 }
 
 .mid-param-knob-whole {
-  width: 80px;
-  height: 100px;
+  width: 70px;
+  height: 90px;
 }
 
 .mid-param-knob {
-  width: 80px;
+  width: 70px;
+  height: 80px;
+}
+
+.low-param-knob-whole {
+  width: 70px;
   height: 90px;
+}
+
+.low-param-knob {
+  width: 70px;
+  height: 80px;
+}
+
+.high-param-knob-whole {
+  width: 70px;
+  height: 90px;
+}
+
+.high-param-knob {
+  width: 70px;
+  height: 85px;
+}
+
+.top-param-knob-whole {
+  width: 60px;
+  height: 85px;
+}
+
+.top-param-knob {
+  width: 60px;
+  height: 80px;
 }
 
 .cut-param-knob-whole {
@@ -114,11 +144,21 @@ knob .main-track {
 }
 
 knob .mid-track {
-  background-color: #48475d;
-  color: #0c0293;
+  background-color: #75704036;
+  color: #726d3e;
 }
 
-knob .eq-track {
+knob .low-track {
+  background-color: #9c55554f;
+  color: #804242;
+}
+
+knob .high-track {
+  background-color: #6396583a;
+  color: #5f8f55;
+}
+
+knob .top-track {
   background-color: #48475d;
   color: #99e65f;
 }
@@ -145,7 +185,15 @@ knob .eq-track {
   background-color: #8b8aa6;
 }
 
-.eq-tick {
+.low-tick {
+  background-color: #8b8aa6;
+}
+
+.high-tick {
+  background-color: #8b8aa6;
+}
+
+.top-tick {
   background-color: #8b8aa6;
 }
 

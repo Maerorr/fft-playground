@@ -16,7 +16,7 @@ use crate::{
     WINDOW_CORRECTION,
 };
 
-use super::{fft_data::FFTData, fft_size::FFTSize, spectral_multiband_compressor::SpectralMultibandCompressor};
+use super::{compressor::Compressor, fft_data::FFTData, fft_size::FFTSize, spectral_multiband_compressor::SpectralMultibandCompressor};
 
 pub struct StereoFFTProcessor {
     input_buffer: [Vec<f32>; 2],
@@ -27,6 +27,9 @@ pub struct StereoFFTProcessor {
     pub pos: usize,
     pub count_to_next_hop: usize,
     pub hop_size: usize,
+
+    pub in_gain: f32,
+    pub out_gain: f32,
 
     sample_rate: usize,
 
@@ -69,6 +72,9 @@ impl StereoFFTProcessor {
             count_to_next_hop: 0,
             hop_size: fft_size / 4,
 
+            in_gain: 1.0,
+            out_gain: 1.0,
+
             sample_rate,
 
             data: [data1, data2],
@@ -102,26 +108,45 @@ impl StereoFFTProcessor {
         &mut self, 
         an_chan: AnalyzerChannel, 
         low_th: f32, 
+        low_r: f32,
+        low_up_r: f32,
         low_g: f32, 
-        mid_th: f32, 
+        mid_th: f32,
+        mid_r: f32,
+        mid_up_r: f32, 
         mid_g: f32, 
         high_th: f32, 
+        high_r: f32,
+        high_up_r: f32,
         high_g: f32,
         attack_ms: f32,
         release_ms: f32,
+        mix: f32,
+        in_gain: f32,
+        out_gain: f32,
     ) {
         self.analyzer_channel = an_chan;
+        self.in_gain = in_gain;
+        self.out_gain = out_gain;
         
         self.fft_effect.set_params(
             low_th, 
+            low_r,
+            low_up_r,
             low_g, 
             mid_th, 
+            mid_r,
+            mid_up_r,
             mid_g, 
             high_th, 
+            high_r,
+            high_up_r,
             high_g, 
             attack_ms, 
             release_ms, 
-            self.sample_rate as f32 / self.hop_size as f32);
+            self.sample_rate as f32 / self.hop_size as f32,
+            mix,
+        );
     }
 
     pub fn set_sample_rate(&mut self, sr: usize) {
@@ -163,8 +188,8 @@ impl StereoFFTProcessor {
 
         // copy each sample into l/r buffers
         for (channel, sample) in samples_lr.iter().enumerate() {
-            self.input_buffer[channel][self.pos] = *sample;
-            output[channel] = self.output_buffer[channel][self.pos];
+            self.input_buffer[channel][self.pos] = *sample * self.in_gain;
+            output[channel] = self.output_buffer[channel][self.pos] * self.out_gain;
             self.output_buffer[channel][self.pos] = 0f32;
         }
 
@@ -180,7 +205,7 @@ impl StereoFFTProcessor {
             self.process_windows();
         }
 
-        output
+        output 
     }
 
     pub fn process_windows(&mut self) {
@@ -318,10 +343,11 @@ impl StereoFFTProcessor {
             *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
         }
 
+        self.fft_effect.get_curve(&mut analyzer_input.comp_curve_low, 0);
+        self.fft_effect.get_curve(&mut analyzer_input.comp_curve_mid, 1);
+        self.fft_effect.get_curve(&mut analyzer_input.comp_curve_high, 2);
+
         for (i, delta) in analyzer_input.delta[0..utils::fft_size_to_bins(self.fft_size)].iter_mut().enumerate() {
-            if (self.fft_effect.delta[i] != 0.0) {
-                nih_log!("{}: {}", i, self.fft_effect.delta[i])
-            }
             *delta = self.fft_effect.delta[i];
         }
 

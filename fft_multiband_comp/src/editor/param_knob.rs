@@ -114,7 +114,6 @@ impl ParamKnob {
                     .right(Stretch(1.0))
                     .bottom(Percentage(10.0));
                 })
-                //.background_color(Color::rgb(50, 50, 50))
                 .class(format!("{}-param-knob-whole", css_prefix.clone()).as_str());
             }),
         )

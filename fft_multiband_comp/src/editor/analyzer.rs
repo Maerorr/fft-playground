@@ -54,9 +54,9 @@ impl View for Analyzer {
         let analyzer_data = analyzer_data.read();
         let sr = self.sample_rate.load(Ordering::Relaxed);
         let nyquist = sr / 2.0;
+        draw_bands(cx, canvas, analyzer_data);
         draw_spectrum_guides(cx, canvas, analyzer_data);
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
-        draw_bands(cx, canvas, analyzer_data);
         draw_delta(cx, canvas, analyzer_data);
 
         // draw border

@@ -5,6 +5,7 @@ use nih_plug::nih_log;
 pub struct Compressor {
     pub th: f32,
     pub r: f32,
+    pub up_r: f32,
     pub w: f32,
     pub att: f32,
     pub rel: f32,
@@ -18,6 +19,7 @@ impl Compressor {
         Self {
             th,
             r,
+            up_r: 1.0,
             w,
             att: att_coeff,
             rel: rel_coeff,
@@ -52,6 +54,15 @@ impl Compressor {
             self.reduced = self.th + (self.env - self.th) / self.r;
         }
 
+        // in db, upwards compression is adding, so we can always add to non existing signals creating weird results
+        if self.env > -99.0 {
+            if 2.0 * (self.env - self.th) < -self.w {
+                self.reduced = self.th + (self.env - self.th) / self.up_r;
+            } else if 2.0 * (self.env - self.th).abs() <= self.w {
+                self.reduced = self.env - ((1.0 / self.up_r - 1.0) * (self.env - self.th - self.w / 2.0).powi(2)) / (2.0 * self.w);
+            }
+        }
+
         // input * reduction, but in db
         // x_db + (output - self.env)
 
@@ -79,5 +90,25 @@ impl Compressor {
 
         let out_val = x * utils::db_to_gain(self.reduced - self.env);
         out_val
+    }
+
+    pub fn get_curve(&self, vec: &mut Vec<f32>) {
+        for i in 0..vec.len() {
+            let x = -100.0 + (i as f32) * (100.0 / (vec.len() as f32));
+
+            if 2.0 * (x - self.th) < -self.w {
+                vec[i] = x;
+            } else if 2.0 * (x - self.th).abs() <= self.w {
+                vec[i] = x + ((1.0 / self.r - 1.0) * (x - self.th + self.w / 2.0).powi(2)) / (2.0 * self.w);
+            } else {
+                vec[i] = self.th + (x - self.th) / self.r;
+            }
+
+            if 2.0 * (vec[i] - self.th) < -self.w {
+                vec[i] = self.th + (vec[i] - self.th) / self.up_r;
+            } else if 2.0 * (vec[i] - self.th).abs() <= self.w {
+                vec[i] = vec[i] - ((1.0 / self.up_r - 1.0) * (vec[i] - self.th - self.w / 2.0).powi(2)) / (2.0 * self.w);
+            }
+        }
     }
 }
