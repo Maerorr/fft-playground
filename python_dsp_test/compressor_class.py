@@ -8,6 +8,7 @@ class Compressor:
     def __init__(self, Th, R, W, ATT, REL, fs):
         self.Th = Th
         self.R = R
+        self.UP_R = 1.0
         self.W = W
         self.ATT_MS = ATT
         self.ATT = np.exp(-1. / (fs * ATT * 1e-3))
@@ -54,3 +55,24 @@ class Compressor:
         plt.title("Dynamic Range Compression")
         plt.legend()
         plt.show()
+
+    def get_compressor_curve(self):
+        buf = np.linspace(-100.0, 0.0, 1000)
+        buf_o = np.linspace(-100.0, 0.0, 1000)
+
+        for i, x in enumerate(buf):
+            if (2 * (x - self.Th)) < -self.W:
+                buf_o[i] = x
+            elif (2 * abs(x - self.Th)) <= self.W:
+                buf_o[i] = x + ((1.0 / self.R - 1.0)*(x - self.Th + self.W/2)**2) / (2.0 * self.W)
+            else:
+                buf_o[i] = self.Th + (x - self.Th) / self.R
+
+        for i, x in enumerate(buf_o):
+            if (2 * (x - self.Th)) < -self.W:
+                buf_o[i] = self.Th + (x - self.Th) / self.UP_R
+            elif (2 * abs(x - self.Th)) <= self.W:
+                buf_o[i] = x - ((1.0 / self.UP_R - 1.0)*(x - self.Th - self.W/2)**2) / (2.0 * self.W)
+            else:
+                buf_o[i] = x
+        return buf_o

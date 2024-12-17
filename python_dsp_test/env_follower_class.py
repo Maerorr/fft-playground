@@ -8,7 +8,7 @@ class EnvelopeFollower:
 
     def process(self, buffer):
         self.env = np.zeros(len(buffer))
-        last_env = -100.0
+        last_env = buffer[0]
         for i, xn in enumerate(buffer):
             cur_env = 0.0
             if xn > last_env:
