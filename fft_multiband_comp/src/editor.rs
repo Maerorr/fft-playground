@@ -27,7 +27,7 @@ const HEIGHT: u32 = 700;
 const ANALYZER_WIDTH: f32 = 800.0;
 const ANALYZER_HEIGHT: f32 = 225.0;
 
-const TOP_KNOB_SPACE_WIDTH: f32 = 150.0f32;
+const TOP_KNOB_SPACE_WIDTH: f32 = 120.0f32;
 
 const PANEL_COLOR: Color = Color::rgb(36, 35, 43);
 const SPECTRUM_BORDER_COLOR: Color = Color::rgb(72, 71, 93);
@@ -64,6 +64,7 @@ pub(crate) fn create(
             .child_top(Stretch(1.0))
             .child_bottom(Stretch(1.0))
             .class("header-label");
+
             HStack::new(cx, |cx| {
                 ParamKnob::new(cx, 
                     EditorData::plugin_data, |params| &params.attack_ms, false, 
@@ -74,6 +75,12 @@ pub(crate) fn create(
                     .left(Pixels(94.0));
                 ParamKnob::new(cx, 
                     EditorData::plugin_data, |params| &params.release_ms, false, 
+                    String::from("top"), 
+                    true)
+                    .width(Pixels(TOP_KNOB_SPACE_WIDTH))
+                    .height(Pixels(80.0));
+                ParamKnob::new(cx, 
+                    EditorData::plugin_data, |params| &params.smooth, false, 
                     String::from("top"), 
                     true)
                     .width(Pixels(TOP_KNOB_SPACE_WIDTH))

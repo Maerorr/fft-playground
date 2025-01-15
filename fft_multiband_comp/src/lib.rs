@@ -29,7 +29,6 @@ const WINDOW_CORRECTION: f32 = 2.0 / 3.0;
 
 pub struct PluginData {
     stereo_fft_processor: StereoFFTProcessor,
-    compressor: Compressor,
     params: Arc<PluginParams>,
     analyzer_output_data: Arc<Mutex<triple_buffer::Output<AnalyzerData>>>,
     sample_rate: Arc<AtomicF32>,
@@ -54,7 +53,6 @@ impl Default for PluginData {
                 size_changed.clone(),
                 analyzer_input_data,
             ),
-            compressor: Compressor::new(-30.0, 2.0, 5.0, attack_coeff, release_coeff),
             params: Arc::new(PluginParams::new(size_changed.clone())),
             analyzer_output_data: Arc::new(Mutex::new(analyzer_output_data)),
             sample_rate: Arc::new(AtomicF32::new(1.0)),
@@ -117,11 +115,6 @@ impl Plugin for PluginData {
             _buffer_config.sample_rate,
             std::sync::atomic::Ordering::Relaxed,
         );
-
-        let attack_coeff = (-1.0f32 / (10.0 * _buffer_config.sample_rate as f32 * 0.001)).exp();
-        let release_coeff = (-1.0f32 / (50.0 * _buffer_config.sample_rate as f32 * 0.001)).exp();
-
-        self.compressor.set_params(-30.0, 2.0, 5.0, attack_coeff, release_coeff);
         true
     }
 
@@ -161,6 +154,7 @@ impl Plugin for PluginData {
         let mix = self.params.mix.value();
         let in_gain = self.params.in_gain.value();
         let out_gain = self.params.out_gain.value();
+        let smooth = self.params.smooth.value();
 
         self.stereo_fft_processor.set_params(
             an_chan,
@@ -181,6 +175,9 @@ impl Plugin for PluginData {
             mix,
             in_gain,
             out_gain,
+            low_mid_freq,
+            mid_high_freq,
+            smooth,
         );
 
         if self.size_changed.load(Ordering::Relaxed) {

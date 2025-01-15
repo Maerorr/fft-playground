@@ -11,6 +11,8 @@ pub struct SpectralMultibandCompressor {
     pub low_mid_idx: usize,
     pub mid_high_idx: usize,
 
+    pub lpf: utils::SimpleLPF,
+
     // compressor params for 3 bands, low mid high
     pub low_threshold: f32,
     pub low_ratio: f32,
@@ -36,6 +38,7 @@ pub struct SpectralMultibandCompressor {
     pub delta: Vec<f32>,
     pub curve_compressor: Compressor,
 
+    pub smooth: f32,
 
     pub sample_rate: f32,
 }
@@ -75,6 +78,7 @@ impl SpectralMultibandCompressor {
 
         Self {
             compressors: [compressors.to_vec(), compressors.to_vec()],
+            lpf: utils::SimpleLPF::new(0.001f32),
             low_threshold,
             low_ratio: 2.0,
             low_up_ratio: 5.0,
@@ -105,6 +109,7 @@ impl SpectralMultibandCompressor {
                 0.0,
                 0.0,
             ),
+            smooth: 0.00f32,
         }
     }
 
@@ -155,6 +160,9 @@ impl SpectralMultibandCompressor {
         release_ms: f32,
         hops_per_second: f32,
         mix: f32,
+        low_mid_freq: f32,
+        mid_high_freq: f32,
+        smooth: f32,
     ) {
         // check if any parameters changed, if so update only the compressors in said band
         if self.low_threshold != low_threshold {
@@ -230,6 +238,10 @@ impl SpectralMultibandCompressor {
                 self.compressors[1][i].rel = release_coeff;
             }
         }
+
+        self.lpf.set_a(smooth);
+        self.smooth = smooth;
+
         self.low_threshold = low_threshold;
         self.low_ratio = low_ratio;
         self.low_up_ratio = low_up_ratio;
@@ -281,10 +293,29 @@ impl SpectralMultibandCompressor {
                 let gained_input = utils::gain_to_db(utils::db_to_gain(*db) * gain); //dB
                 let delta: f32 = self.compressors[channel][i].process_db(gained_input); //dB
 
-                let output = utils::db_to_gain(gained_input) * utils::db_to_gain(delta); // linear
-                output_buffer[channel][i] = Complex::from_polar(utils::lerp(utils::db_to_gain(*db), output, self.mix), phase[channel][i]);
+                //let output = mag[channel][i] * utils::db_to_gain(delta); // linear
+                //output_buffer[channel][i] = Complex::from_polar(utils::lerp(utils::db_to_gain(*db), output, self.mix), phase[channel][i]);
                 // this will average over both channels
                 self.delta[i] += delta / 2f32;
+            }
+            self.lpf.set_a(self.smooth);
+            // smoth out the delta
+            let len = self.delta.len();
+            self.lpf.calculate_a_range();
+            for (i, delta) in self.delta.iter_mut().enumerate().skip(1).take(len - 2) {
+                self.lpf.set_a_log_scale(i, len);
+                *delta = self.lpf.process(*delta);
+            }
+            
+            self.lpf.set_a(self.smooth);
+            for (i, delta) in self.delta.iter_mut().enumerate().rev().skip(1).take(len - 2) {
+                self.lpf.set_a_log_scale(i, len);
+                *delta = self.lpf.process(*delta);
+            }
+
+            for (i, delta) in self.delta.iter().enumerate() {
+                let output = mag[channel][i] * utils::db_to_gain(*delta); // mag * delta as linear
+                output_buffer[channel][i] = Complex::from_polar(utils::lerp(utils::db_to_gain(db[channel][i]), output, self.mix), phase[channel][i]);
             }
             self.delta[0] = 0.0;
             self.delta[db[0].len() - 1] = 0.0f32;

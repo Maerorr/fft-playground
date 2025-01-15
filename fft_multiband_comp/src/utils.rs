@@ -1,3 +1,5 @@
+use nih_plug::nih_log;
+
 pub const MINUS_INF_DB: f32 = -100f32;
 pub const MINUS_INF_GAIN: f32 = 1e-5;
 
@@ -7,6 +9,9 @@ pub struct SimpleLPF {
     pub a: f32,
     b: f32,
     z: f32,
+    pub log_scale: f32,
+    mina: f32,
+    maxa: f32,
 }
 
 impl SimpleLPF {
@@ -14,13 +19,32 @@ impl SimpleLPF {
         Self {
             a,
             b: 1.0f32 - a,
-            z: 0.0f32
+            z: 0.0f32, 
+            log_scale: 3.0f32,
+            mina: 0.0f32,
+            maxa: 1.0f32,
         }
     }
 
+    #[inline]
     pub fn set_a(&mut self, a: f32) {
         self.a = a;
         self.b = 1.0 - a;
+    }
+
+    #[inline]
+    pub fn set_a_log_scale(&mut self, index: usize, total_bins: usize) {
+        let log_position = ((index as f32).ln() / (total_bins as f32).ln()).sqrt();
+        let dynamic_a = self.mina + log_position * (self.maxa - self.mina);
+        self.set_a(dynamic_a);
+    }
+
+    pub fn calculate_a_range(&mut self) {
+        let min_a = self.a / self.log_scale;
+        let max_a = self.a * self.log_scale;
+        self.mina = min_a.clamp(0.0, 1.0);
+        self.maxa = max_a.clamp(0.0, 1.0);
+        //nih_log!("a : {:.3}, min_a: {:.3}, max_a: {:.3}", self.a, self.mina, self.maxa);
     }
 
     #[inline]

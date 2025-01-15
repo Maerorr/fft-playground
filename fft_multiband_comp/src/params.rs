@@ -79,6 +79,9 @@ pub struct PluginParams {
 
     #[id = "mix"]
     pub mix: FloatParam,
+
+    #[id = "smooth"]
+    pub smooth: FloatParam,
 }
 
 impl PluginParams {
@@ -113,7 +116,7 @@ impl PluginParams {
             
             low_threshold: FloatParam::new(
                 "Low Threshold",
-                utils::db_to_gain(-20f32),
+                utils::db_to_gain(-10f32),
                 FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
                     max: utils::db_to_gain(0f32),
@@ -155,7 +158,7 @@ impl PluginParams {
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
             high_threshold: FloatParam::new(
                 "High Threshold",
-                utils::db_to_gain(-20f32),
+                utils::db_to_gain(-30f32),
                 FloatRange::Skewed {
                     min: utils::db_to_gain(-80f32),
                     max: utils::db_to_gain(0f32),
@@ -228,15 +231,21 @@ impl PluginParams {
             .with_string_to_value(s2v_f32_percentage())
             .with_value_to_string(v2s_f32_percentage(2))
             .with_unit("%"),
-            low_up_ratio: FloatParam::new("Low Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 20.0 })
+            low_up_ratio: FloatParam::new("Low Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 5.0 })
             .with_string_to_value(s2v_compression_ratio())
             .with_value_to_string(v2s_compression_ratio(2)),
-            mid_up_ratio: FloatParam::new("Mid Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 20.0 })
+            mid_up_ratio: FloatParam::new("Mid Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 5.0 })
             .with_string_to_value(s2v_compression_ratio())
             .with_value_to_string(v2s_compression_ratio(2)),
-            high_up_ratio: FloatParam::new("High Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 20.0 })
+            high_up_ratio: FloatParam::new("High Up Ratio", 1.0,  FloatRange::Linear { min: 1.0, max: 5.0 })
             .with_string_to_value(s2v_compression_ratio())
             .with_value_to_string(v2s_compression_ratio(2)),
+
+            smooth: FloatParam::new(
+                "Smooth",
+                0.8,
+                FloatRange::Linear { min: 0.0, max: 1.0 }
+            ),
         }
     }
 }

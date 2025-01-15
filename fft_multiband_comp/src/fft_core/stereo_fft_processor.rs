@@ -124,6 +124,9 @@ impl StereoFFTProcessor {
         mix: f32,
         in_gain: f32,
         out_gain: f32,
+        low_mid_freq: f32,
+        mid_high_freq: f32,
+        smooth: f32,
     ) {
         self.analyzer_channel = an_chan;
         self.in_gain = in_gain;
@@ -146,6 +149,9 @@ impl StereoFFTProcessor {
             release_ms, 
             self.sample_rate as f32 / self.hop_size as f32,
             mix,
+            low_mid_freq,
+            mid_high_freq,
+            smooth,
         );
     }
 
@@ -342,6 +348,9 @@ impl StereoFFTProcessor {
         {
             *mag = (self.data[0].spectrum_db[i] + self.data[1].spectrum_db[i]) / 2f32;
         }
+
+        analyzer_input.thresholds = [self.fft_effect.low_threshold, self.fft_effect.mid_threshold, self.fft_effect.high_threshold];
+        analyzer_input.freq_bands = [self.fft_effect.low_mid_freq, self.fft_effect.mid_high_freq];
 
         self.fft_effect.get_curve(&mut analyzer_input.comp_curve_low, 0);
         self.fft_effect.get_curve(&mut analyzer_input.comp_curve_mid, 1);

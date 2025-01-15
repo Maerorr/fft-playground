@@ -58,6 +58,7 @@ impl View for Analyzer {
         draw_spectrum_guides(cx, canvas, analyzer_data);
         draw_spectrum(cx, canvas, analyzer_data, nyquist, sr);
         draw_delta(cx, canvas, analyzer_data);
+        draw_thresholds(cx, canvas, analyzer_data);
 
         // draw border
         let border_width = cx.border_width();
@@ -65,10 +66,10 @@ impl View for Analyzer {
 
         let mut path = vg::Path::new();
         {
-            let x = bounds.x + border_width / 2.0;
-            let y = bounds.y + border_width / 2.0;
-            let w = bounds.w - border_width;
-            let h = bounds.h - border_width;
+            let x = bounds.x;
+            let y = bounds.y;
+            let w = bounds.w;
+            let h = bounds.h;
             path.move_to(x, y);
             path.line_to(x, y + h);
             path.line_to(x + w, y + h);
@@ -92,8 +93,9 @@ fn eq_db_to_height(db_value: f32) -> f32 {
 }
 
 #[inline]
+// min/max ar 60 / -60dB
 fn reduction_db_to_height(db_value: f32) -> f32 {
-    0.5f32 + (db_value / 60.0f32).clamp(-0.5, 0.5)
+    0.5f32 + (db_value / 120.0f32).clamp(-0.5, 0.5)
 }
 
 #[inline]
@@ -126,11 +128,11 @@ fn draw_spectrum(
         let physical_x_coord =
             bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
 
-        let height = db_to_height(*magnitude).clamp(0.0, 0.99);
+        let height = db_to_height(*magnitude).clamp(0.0, 1.0);
 
         bars_path.line_to(
             physical_x_coord,
-            bounds.y + (bounds.h * (1.0 - height) - border_width),
+            bounds.y + (bounds.h * (1.0 - height)),
         );
     }
 
@@ -235,5 +237,48 @@ fn draw_delta(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Analyze
     }
 
     let bars_paint = vg::Paint::color(vg::Color::rgb(25, 24, 221)).with_line_width(2.0);
+    canvas.stroke_path(&bars_path, &bars_paint);
+}
+
+fn draw_thresholds(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &AnalyzerData) {
+    let bounds = cx.bounds();
+    let border_width = cx.border_width();
+
+    let mut bars_path = vg::Path::new();
+
+    // THRESHOLD 1
+    let x = freq_to_x(0.0f32);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[0]);
+    bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+
+    let x = freq_to_x(analyzer_data.freq_bands[0]);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[0]);
+    bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+
+    // THRESHOLD 2
+    let x = freq_to_x(analyzer_data.freq_bands[0]);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[1]);
+    bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+
+    let x = freq_to_x(analyzer_data.freq_bands[1]);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[1]);
+    bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+
+    // THRESHOLD 3
+    let x = freq_to_x(analyzer_data.freq_bands[1]);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[2]);
+    bars_path.move_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));
+
+    let x = freq_to_x(20_000.0f32);
+    let physical_x_coord = bounds.x + (bounds.w * x).clamp(border_width, bounds.w - border_width);
+    let height = reduction_db_to_height(analyzer_data.thresholds[2]);
+    bars_path.line_to(physical_x_coord, bounds.y + (bounds.h * (1.0 - height)));    
+
+    let bars_paint = vg::Paint::color(vg::Color::rgb(25, 221, 24)).with_line_width(2.0);
     canvas.stroke_path(&bars_path, &bars_paint);
 }
