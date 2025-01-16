@@ -63,18 +63,12 @@ impl SpectralMultibandCompressor {
         let attack_coeff = (-1.0 / (attack_ms * hops_per_second * 0.001)).exp();
         let release_coeff = (-1.0 / (release_ms * hops_per_second * 0.001)).exp();
         for _ in 0..(fft_size / 2 + 1) {
-            let compressor = Compressor::new(
-                low_threshold,
-                2.0,
-                10.0,
-                attack_coeff,
-                release_coeff,
-            );
+            let compressor = Compressor::new(low_threshold, 2.0, 10.0, attack_coeff, release_coeff);
             compressors.push(compressor);
         }
 
-        let low_mid_idx = utils::freq_to_bin(low_mid_freq, fft_size , sample_rate);
-        let mid_high_idx = utils::freq_to_bin(mid_high_freq, fft_size , sample_rate);
+        let low_mid_idx = utils::freq_to_bin(low_mid_freq, fft_size, sample_rate);
+        let mid_high_idx = utils::freq_to_bin(mid_high_freq, fft_size, sample_rate);
 
         Self {
             compressors: [compressors.to_vec(), compressors.to_vec()],
@@ -102,13 +96,7 @@ impl SpectralMultibandCompressor {
             mix: 0.0,
             sample_rate,
             delta: vec![0.0f32; fft_size / 2 + 1],
-            curve_compressor: Compressor::new(
-                low_threshold,
-                2.0,
-                20.0,
-                0.0,
-                0.0,
-            ),
+            curve_compressor: Compressor::new(low_threshold, 2.0, 20.0, 0.0, 0.0),
             smooth: 0.00f32,
         }
     }
@@ -116,29 +104,17 @@ impl SpectralMultibandCompressor {
     pub fn resize(&mut self, fft_size: usize) {
         self.fft_size = fft_size;
         let bin_num = fft_size / 2 + 1;
-        
+
         let attack_coeff = (-1.0 / (self.attack_ms * self.hops_per_second * 0.001)).exp();
         let release_coeff = (-1.0 / (self.release_ms * self.hops_per_second * 0.001)).exp();
         self.delta.resize(bin_num, 0.0f32);
         self.compressors[0].resize(
-            bin_num, 
-            Compressor::new(
-                self.low_threshold,
-                0.2,
-                5.0,
-                attack_coeff,
-                release_coeff,
-            )
+            bin_num,
+            Compressor::new(self.low_threshold, 0.2, 5.0, attack_coeff, release_coeff),
         );
         self.compressors[1].resize(
-            bin_num, 
-            Compressor::new(
-                self.low_threshold,
-                2.0,
-                5.0,
-                attack_coeff,
-                release_coeff,
-            )
+            bin_num,
+            Compressor::new(self.low_threshold, 2.0, 5.0, attack_coeff, release_coeff),
         );
     }
 
@@ -164,71 +140,84 @@ impl SpectralMultibandCompressor {
         mid_high_freq: f32,
         smooth: f32,
     ) {
+        let changed = self.low_mid_freq != low_mid_freq || self.mid_high_freq != mid_high_freq;
+        if low_mid_freq > mid_high_freq {
+            let temp = low_mid_freq;
+            self.low_mid_freq = mid_high_freq;
+            self.mid_high_freq = temp;
+        } else {
+            self.low_mid_freq = low_mid_freq;
+            self.mid_high_freq = mid_high_freq;
+        }
+
+        self.low_mid_idx = utils::freq_to_bin(self.low_mid_freq, self.fft_size, self.sample_rate);
+        self.mid_high_idx = utils::freq_to_bin(self.mid_high_freq, self.fft_size, self.sample_rate);
+
         // check if any parameters changed, if so update only the compressors in said band
-        if self.low_threshold != low_threshold {
+        if self.low_threshold != low_threshold || changed {
             for i in 0..self.low_mid_idx {
                 self.compressors[0][i].th = low_threshold;
                 self.compressors[1][i].th = low_threshold;
             }
         }
 
-        if self.low_ratio != low_ratio {
+        if self.low_ratio != low_ratio || changed {
             for i in 0..self.low_mid_idx {
                 self.compressors[0][i].r = low_ratio;
                 self.compressors[1][i].r = low_ratio;
             }
         }
 
-        if self.low_up_ratio != low_up_ratio {
+        if self.low_up_ratio != low_up_ratio || changed {
             for i in 0..self.low_mid_idx {
                 self.compressors[0][i].up_r = low_up_ratio;
                 self.compressors[1][i].up_r = low_up_ratio;
             }
         }
 
-        if self.mid_threshold != mid_threshold {
+        if self.mid_threshold != mid_threshold || changed {
             for i in self.low_mid_idx..self.mid_high_idx {
                 self.compressors[0][i].th = mid_threshold;
                 self.compressors[1][i].th = mid_threshold;
             }
         }
 
-        if self.mid_ratio != mid_ratio {
+        if self.mid_ratio != mid_ratio || changed {
             for i in self.low_mid_idx..self.mid_high_idx {
                 self.compressors[0][i].r = mid_ratio;
                 self.compressors[1][i].r = mid_ratio;
             }
         }
 
-        if self.mid_up_ratio != mid_up_ratio {
+        if self.mid_up_ratio != mid_up_ratio || changed {
             for i in self.low_mid_idx..self.mid_high_idx {
                 self.compressors[0][i].up_r = mid_up_ratio;
                 self.compressors[1][i].up_r = mid_up_ratio;
             }
         }
 
-        if self.high_threshold != high_threshold {
+        if self.high_threshold != high_threshold || changed {
             for i in self.mid_high_idx..(self.fft_size / 2 + 1) {
                 self.compressors[0][i].th = high_threshold;
                 self.compressors[1][i].th = high_threshold;
             }
         }
 
-        if self.high_ratio != high_ratio {
+        if self.high_ratio != high_ratio || changed {
             for i in self.mid_high_idx..(self.fft_size / 2 + 1) {
                 self.compressors[0][i].r = high_ratio;
                 self.compressors[1][i].r = high_ratio;
             }
         }
 
-        if self.high_up_ratio != high_up_ratio {
+        if self.high_up_ratio != high_up_ratio || changed {
             for i in self.mid_high_idx..(self.fft_size / 2 + 1) {
                 self.compressors[0][i].up_r = high_up_ratio;
                 self.compressors[1][i].up_r = high_up_ratio;
             }
         }
 
-        if self.attack_ms != attack_ms || self.release_ms != release_ms {
+        if self.attack_ms != attack_ms || self.release_ms != release_ms || changed {
             let attack_coeff = (-1.0 / (attack_ms * hops_per_second * 0.001)).exp();
             let release_coeff = (-1.0 / (release_ms * hops_per_second * 0.001)).exp();
             for i in 0..(self.fft_size / 2 + 1) {
@@ -274,12 +263,12 @@ impl SpectralMultibandCompressor {
 
     pub fn process(
         &mut self,
-        mag: [&Vec<f32>; 2], 
-        phase: [&Vec<f32>; 2], 
-        db: [&Vec<f32>; 2], 
-        freq: [&Vec<f32>; 2], 
-        output_buffer: &mut [Vec<Complex<f32>>; 2]) 
-    {
+        mag: [&Vec<f32>; 2],
+        phase: [&Vec<f32>; 2],
+        db: [&Vec<f32>; 2],
+        freq: [&Vec<f32>; 2],
+        output_buffer: &mut [Vec<Complex<f32>>; 2],
+    ) {
         for d in self.delta.iter_mut() {
             *d = 0.0f32;
         }
@@ -306,16 +295,26 @@ impl SpectralMultibandCompressor {
                 self.lpf.set_a_log_scale(i, len);
                 *delta = self.lpf.process(*delta);
             }
-            
+
             self.lpf.set_a(self.smooth);
-            for (i, delta) in self.delta.iter_mut().enumerate().rev().skip(1).take(len - 2) {
+            for (i, delta) in self
+                .delta
+                .iter_mut()
+                .enumerate()
+                .rev()
+                .skip(1)
+                .take(len - 2)
+            {
                 self.lpf.set_a_log_scale(i, len);
                 *delta = self.lpf.process(*delta);
             }
 
             for (i, delta) in self.delta.iter().enumerate() {
                 let output = mag[channel][i] * utils::db_to_gain(*delta); // mag * delta as linear
-                output_buffer[channel][i] = Complex::from_polar(utils::lerp(utils::db_to_gain(db[channel][i]), output, self.mix), phase[channel][i]);
+                output_buffer[channel][i] = Complex::from_polar(
+                    utils::lerp(utils::db_to_gain(db[channel][i]), output, self.mix),
+                    phase[channel][i],
+                );
             }
             self.delta[0] = 0.0;
             self.delta[db[0].len() - 1] = 0.0f32;

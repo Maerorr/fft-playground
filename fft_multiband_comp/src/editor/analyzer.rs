@@ -169,7 +169,7 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
     let border_width = cx.border_width();
 
     let mut bars_path = vg::Path::new();
-    let low_x = freq_to_x(300.0);
+    let low_x = freq_to_x(analyzer_data.freq_bands[0]);
     bars_path.move_to(bounds.x + (bounds.w * low_x), bounds.y + (bounds.h));
     bars_path.line_to(bounds.x + (bounds.w * low_x), bounds.y);
     let bars_paint = vg::Paint::color(vg::Color::rgb(220, 220, 220)).with_line_width(1.0);
@@ -181,7 +181,7 @@ pub fn draw_bands(cx: &mut DrawContext, canvas: &mut Canvas, analyzer_data: &Ana
     canvas.fill_path(&low_fill, &low_fill_paint);
 
     let mut bars_path = vg::Path::new();
-    let high_x = freq_to_x(3500.0);
+    let high_x = freq_to_x(analyzer_data.freq_bands[1]);
 
     let mut mid_fill = vg::Path::new();
     mid_fill.rect(
